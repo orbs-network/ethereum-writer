@@ -37,6 +37,9 @@ function hasLongBadReputationInAnyVc(ethAddress: string, state: State, config: V
     initTimeEnteredBadReputationIfNeeded(ethAddress, vcId, state);
 
     // if vc is out of sync, ignore its reputation altogether
+    // TODO: REMOVE ME - we don't use VCs and we need to represent matic services equivalents
+    // TODO: REMOVE ME - 1. ref time <= Threshold 2. no errors TBD review with tal
+    // TODO: REMOVE ME - InvalidReputationGraceSeconds - should be smaller than 30 hours
     if (!isVcNear(vcId, state, config)) continue;
 
     // maintain a helper state variable to see how long they're in bad reputation
