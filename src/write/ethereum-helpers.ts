@@ -2,6 +2,7 @@ import * as Logger from '../logger';
 import { State, EthereumTxStatus, GasPriceStrategy } from '../model/state';
 import { getCurrentClockTime, jsonStringifyComplexTypes, toNumber } from '../helpers';
 import { TransactionConfig, TransactionReceipt } from 'web3-core';
+import {TxData} from "@ethereumjs/tx";
 
 const GAS_LIMIT_ESTIMATE_EXTRA = 300000;
 const GAS_LIMIT_HARD_LIMIT = 2000000;
@@ -49,24 +50,24 @@ export async function signAndSendTransaction(
   contractAddress: string,
   senderAddress: string,
   gasPrice: number,
-  state: State
+  state: State,
 ): Promise<string> {
   if (!state.web3) throw new Error('Cannot send tx until web3 client is initialized.');
   if (!state.signer) throw new Error('Cannot send tx until signer is initialized.');
 
   const nonce = await state.web3.eth.getTransactionCount(senderAddress, 'latest'); // ignore pending pool
 
-  const txObject: TransactionConfig = {
+  const txConfig: TransactionConfig = {
     from: senderAddress,
     to: contractAddress,
     gasPrice: gasPrice,
     data: encodedAbi,
-    nonce: nonce,
+    nonce: nonce
   };
 
-  Logger.log(`About to estimate gas for tx object: ${jsonStringifyComplexTypes(txObject)}.`);
+  Logger.log(`About to estimate gas for tx object: ${jsonStringifyComplexTypes(txConfig)}.`);
 
-  let gasLimit = toNumber(await state.web3.eth.estimateGas(txObject));
+  let gasLimit = toNumber(await state.web3.eth.estimateGas(txConfig));
   if (gasLimit <= 0) {
     throw new Error(`Cannot estimate gas for tx with data ${encodedAbi}.`);
   }
@@ -74,13 +75,23 @@ export async function signAndSendTransaction(
   if (gasLimit > GAS_LIMIT_HARD_LIMIT) {
     throw new Error(`Gas limit estimate ${gasLimit} over hard limit ${GAS_LIMIT_HARD_LIMIT}.`);
   }
-  txObject.gas = gasLimit;
 
-  Logger.log(`About to sign and send tx object: ${jsonStringifyComplexTypes(txObject)}.`);
+  // Prepare transaction data for signing
+  const txData : TxData = {
+    data: txConfig.data,
+    gasLimit: gasLimit,
+    gasPrice: String(txConfig.gasPrice),
+    nonce: txConfig.nonce,
+    value: String(txConfig.value ||  '0x'),
+    to: txConfig.to,
+  }
 
-  const { rawTransaction, transactionHash } = await state.signer.sign(txObject);
+  Logger.log(`About to sign and send tx object: ${jsonStringifyComplexTypes(txData)}.`);
+
+  const { rawTransaction, transactionHash } = await state.signer.sign(txData, state.chainId);
+
   if (!rawTransaction || !transactionHash) {
-    throw new Error(`Could not sign tx object: ${jsonStringifyComplexTypes(txObject)}.`);
+    throw new Error(`Could not sign tx object: ${jsonStringifyComplexTypes(txData)}.`);
   }
 
   const web3 = state.web3;

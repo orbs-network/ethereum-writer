@@ -63,6 +63,8 @@ export class State {
   // orbs clients - updated by read/vchain-reputations.ts
   orbsAccount = Orbs.createAccount();
   orbsClientPerVchain: { [VirtualChainId: string]: Orbs.Client } = {};
+
+  chainId = 1;
 }
 
 // helpers
