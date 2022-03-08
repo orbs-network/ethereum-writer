@@ -20,7 +20,7 @@ export class TestEnvironment {
   public nodeOrbsAddress: string;
   public testLogger: (lines: string) => void;
 
-  constructor(private pathToDockerCompose: string) {}
+  constructor(private pathToDockerCompose: string) { }
 
   getAppConfig() {
     return {
@@ -80,13 +80,20 @@ export class TestEnvironment {
       t.log('[E2E] deploy ethereum PoS contracts to ganache');
       t.timeout(5 * 60 * 1000);
       const ganacheAddress = await getAddressForService(this.envName, this.pathToDockerCompose, 'ganache', 7545);
+      console.log(ganacheAddress);
       console.log(`[posv2] about to deploy contracts`);
+      await new Promise((resolve) => {
+        console.log('waiting...')
+        setTimeout(resolve, 20000);
+
+      })
+      console.log('Done!');
       this.ethereumPosDriver = await EthereumPosDriver.new({
         web3Provider: () => {
           return new Web3(
             new (HDWalletProvider as any)(
               'vanish junk genuine web seminar cook absurd royal ability series taste method identify elevator liquid',
-              `http://localhost:${portFromAddress(ganacheAddress)}`,
+              `http://${ganacheAddress}`,
               0,
               100,
               false
@@ -124,14 +131,14 @@ export class TestEnvironment {
       const configFilePath = join(__dirname, 'app-config.json');
       try {
         unlinkSync(configFilePath);
-      } catch (err) {}
+      } catch (err) { }
       const config = this.getAppConfig();
       if (require('./signer/keys.json')['node-address'] != config.NodeOrbsAddress) {
         throw new Error(
           `Incorrect address in ./signer/keys.json, use address ${config.NodeOrbsAddress} with private key ${(this
             .ethereumPosDriver.web3.currentProvider as any).wallets['0x' + config.NodeOrbsAddress]._privKey.toString(
-            'hex'
-          )}`
+              'hex'
+            )}`
         );
       }
       writeFileSync(configFilePath, JSON.stringify(config));
