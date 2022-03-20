@@ -113,3 +113,10 @@ The service is packaged as a Docker image. It is routinely published from this r
     * See which instances are running with `docker ps`, stop all with `docker stop $(docker ps -a -q)`
 
     * See which images exist with `docker images`, delete all relevant with `docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'cicontainer')`
+
+
+### Matic-writer - Polygon
+
+The code has been updated to add EVM write capabalities for Polygon network, as well as Ethereum in order to support polygon proof of stake functionality as of March 29 2022.
+
+the netwrok runs another docker image of this repo under the name __matic-writer__ to support writing to POS contracts on polygon netwrol
