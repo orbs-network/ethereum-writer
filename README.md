@@ -119,4 +119,4 @@ The service is packaged as a Docker image. It is routinely published from this r
 
 The code has been updated to add EVM write capabalities for Polygon network, as well as Ethereum in order to support polygon proof of stake functionality as of March 29 2022.
 
-the netwrok runs another docker image of this repo under the name __matic-writer__ to support writing to POS contracts on polygon netwrol
+the netwrok runs another docker image of this repo under the name __matic-writer__ to support writing to POS contracts on polygon netwrok.
