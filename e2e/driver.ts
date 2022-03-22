@@ -72,7 +72,7 @@ export class TestEnvironment {
     // step 2 - let ganache warm up
     test.serial.before(async (t) => {
       t.log('[E2E] wait 5 seconds for ganache to warm up');
-      await sleep(5000);
+      await sleep(15000);
     });
 
     // step 3 - deploy ethereum PoS contracts to ganache
@@ -122,7 +122,9 @@ export class TestEnvironment {
       t.timeout(60 * 1000);
       // note that gamma virtual chain id is always hard-coded as 42
       const gammaAddress = await getAddressForService(this.envName, this.pathToDockerCompose, 'chain-42', 8080);
-      this.gammaDriver = await new GammaDriver().init(`http://localhost:${portFromAddress(gammaAddress)}`, 42);
+      const gammaUrl = `http://localhost:${portFromAddress(gammaAddress)}`
+      t.log(`gammaUrl URL ${gammaUrl}`)
+      this.gammaDriver = await new GammaDriver().init(gammaUrl, 42);
     });
 
     // step 5 - write config file for app
