@@ -8,7 +8,8 @@ export class State {
   // not updated
   ServiceLaunchTime = getCurrentClockTime(); // UTC seconds
   CurrentVersion = getCurrentVersion(); // v1.2.3
-
+  myEthGuardianAddress = '';
+  
   // updated by read/management.ts
   ManagementLastPollTime = 0; // UTC seconds
   ManagementRefTime = 0; // UTC seconds
@@ -59,6 +60,7 @@ export class State {
   web3?: Web3;
   signer?: Signer;
   ethereumElectionsContract?: Contract;
+  guardianRegistration?: Contract;
 
   // orbs clients - updated by read/vchain-reputations.ts
   orbsAccount = Orbs.createAccount();

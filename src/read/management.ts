@@ -18,12 +18,14 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
   state.ManagementCurrentTopology = response.Payload.CurrentTopology;
   state.ManagementEthToOrbsAddress = _.mapValues(response.Payload.Guardians, (node) => node.OrbsAddress);
 
-  const myEthAddress = findEthFromOrbsAddress(myOrbsAddress, state);
-  state.ManagementInCommittee = response.Payload.CurrentCommittee.some((node) => node.EthAddress == myEthAddress);
-  state.ManagementIsStandby = state.ManagementCurrentStandbys.some((node) => node.EthAddress == myEthAddress);
-  state.ManagementMyElectionsStatus = response.Payload.Guardians[myEthAddress]?.ElectionsStatus;
+  if(!state.myEthGuardianAddress)
+    state.myEthGuardianAddress = findEthFromOrbsAddress(myOrbsAddress, state);
+
+  state.ManagementInCommittee = response.Payload.CurrentCommittee.some((node) => node.EthAddress == state.myEthGuardianAddress);
+  state.ManagementIsStandby = state.ManagementCurrentStandbys.some((node) => node.EthAddress == state.myEthGuardianAddress);
+  state.ManagementMyElectionsStatus = response.Payload.Guardians[state.myEthGuardianAddress]?.ElectionsStatus;
   state.ManagementOthersElectionsStatus = _.mapValues(response.Payload.Guardians, (node) => node.ElectionsStatus);
-  delete state.ManagementOthersElectionsStatus[myEthAddress];
+  delete state.ManagementOthersElectionsStatus[state.myEthGuardianAddress];
 
   // last to be after all possible exceptions and processing delays
   state.ManagementLastPollTime = getCurrentClockTime();

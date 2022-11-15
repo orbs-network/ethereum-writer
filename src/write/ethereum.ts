@@ -12,7 +12,7 @@ import * as Logger from '../logger';
 import { getCurrentClockTime, getToday, getTenDayPeriod } from '../helpers';
 import { State, EthereumTxStatus, CommitteeMember } from '../model/state';
 import {
-  ContractRegistryKey,
+  ContractRegistryKey,  
   getAbiByContractAddress,
   getAbiByContractRegistryKey,
 } from '@orbs-network/orbs-ethereum-contracts-v2';
@@ -33,7 +33,17 @@ export async function initWeb3Client(ethereumEndpoint: string, electionsContract
   // init contracts
   const electionsAbi = getAbiForContract(electionsContractAddress, 'elections');
   state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);
-  state.chainId = await state.web3.eth.getChainId()
+
+  // guardianRegistration address - infer from election address (avoid changing management service to plant it on config as well)
+  const maticElection = '0x94f2da1ef22649c642500e8B1C3252A4670eE95b';
+  const isPolygon = ( electionsContractAddress === maticElection);
+  Logger.log(`isPolygon: ${isPolygon} `);
+  const guardianRegAddress = isPolygon? '0x49E77b78275D6c69c807727870682DbC725E4dc9':'0xce97f8c79228c53b8b9ad86800a493d1e7e5d1e3';
+  Logger.log(`guardianRegAddress: ${guardianRegAddress} `);
+  const regAbi = getAbiByContractRegistryKey('guardiansRegistration');
+  if(!regAbi) Logger.error(`failed to create regApi`);
+  state.guardianRegistration = new state.web3.eth.Contract(regAbi, guardianRegAddress);
+  if(!state.guardianRegistration) Logger.error(`failed to state.guardianRegistration`);
 }
 
 function getAbiForContract(address: string, contractName: ContractRegistryKey) {

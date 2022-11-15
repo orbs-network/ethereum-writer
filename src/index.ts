@@ -12,7 +12,8 @@ import {
   shouldNotifyReadyForCommittee,
   shouldNotifyReadyToSync,
   shouldCheckCanJoinCommittee,
-  calcTimeEnteredTopology,
+  calcTimeEnteredTopology,  
+  isGuardianRegistered
 } from './model/logic-elections';
 import { getAllGuardiansToVoteUnready } from './model/logic-voteunready';
 import Signer from 'orbs-signer-client';
@@ -55,6 +56,8 @@ async function runLoopTick(config: Configuration, state: State) {
   Logger.log('Run loop waking up.');
 
   // STEP 1: read all data (io)
+
+  // is registered on netwok (polygon Ethereum)
 
   // refresh all info from management-service, we don't mind doing this often (2min)
   await readManagementStatus(config.ManagementServiceEndpoint, config.NodeOrbsAddress, state);
@@ -110,13 +113,13 @@ async function runLoopTick(config: Configuration, state: State) {
     state.EthereumSyncStatus = newEthereumSyncStatus;
   }
 
-  // STEP 3: write all data (io)
+  // STEP 3: write all data (io) -Yuval: Only if registered
 
   // send ready-to-sync / ready-for-comittee if needed, we don't mind checking this often (2min)
-  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config)) {
+  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config) && isGuardianRegistered(state)) {
     Logger.log(`Decided to send ready-for-committee.`);
     await sendEthereumElectionsTransaction('ready-for-committee', config.NodeOrbsAddress, state, config);
-  } else if (shouldNotifyReadyToSync(state, config)) {
+  } else if (shouldNotifyReadyToSync(state, config) && isGuardianRegistered(state)) {
     Logger.log(`Decided to send ready-to-sync.`);
     await sendEthereumElectionsTransaction('ready-to-sync', config.NodeOrbsAddress, state, config);
   }
