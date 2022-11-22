@@ -18,6 +18,7 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
   state.ManagementCurrentTopology = response.Payload.CurrentTopology;
   state.ManagementEthToOrbsAddress = _.mapValues(response.Payload.Guardians, (node) => node.OrbsAddress);
 
+  state.guardianRegistrationAddress =   response.Payload.CurrentContractAddress.guardiansRegistration;
   if(!state.myEthGuardianAddress)
     state.myEthGuardianAddress = findEthFromOrbsAddress(myOrbsAddress, state);
 
@@ -54,6 +55,7 @@ interface ManagementStatusResponse {
     CurrentCommittee: { EthAddress: string; Weight: number }[];
     CurrentCandidates: { EthAddress: string; IsStandby: boolean }[];
     CurrentTopology: { EthAddress: string }[];
+    CurrentContractAddress:{guardiansRegistration:string};
     Guardians: {
       [EthAddress: string]: {
         OrbsAddress: string;
@@ -98,6 +100,10 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
         EthAddress: str,
       })
     ),
+    CurrentContractAddress: object({
+      guardiansRegistration: str,
+    }),
+    
     Guardians: record(
       object({
         OrbsAddress: str,

@@ -30,20 +30,18 @@ export async function initWeb3Client(ethereumEndpoint: string, electionsContract
   state.web3.eth.transactionBlockTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionPollingTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionConfirmationBlocks = 1; // to stop web3 from polling pending tx
+  state.chainId = await state.web3.eth.getChainId()
+  
   // init contracts
   const electionsAbi = getAbiForContract(electionsContractAddress, 'elections');
   state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);
-
-  // guardianRegistration address - infer from election address (avoid changing management service to plant it on config as well)
-  const maticElection = '0x94f2da1ef22649c642500e8B1C3252A4670eE95b';
-  const isPolygon = ( electionsContractAddress === maticElection);
-  Logger.log(`isPolygon: ${isPolygon} `);
-  const guardianRegAddress = isPolygon? '0x49E77b78275D6c69c807727870682DbC725E4dc9':'0xce97f8c79228c53b8b9ad86800a493d1e7e5d1e3';
-  Logger.log(`guardianRegAddress: ${guardianRegAddress} `);
+  
+  Logger.log(`guardianRegAddress: ${state.guardianRegistrationAddress} `);
   const regAbi = getAbiByContractRegistryKey('guardiansRegistration');
   if(!regAbi) Logger.error(`failed to create regApi`);
-  state.guardianRegistration = new state.web3.eth.Contract(regAbi, guardianRegAddress);
-  if(!state.guardianRegistration) Logger.error(`failed to state.guardianRegistration`);
+  if(!state.guardianRegistrationAddress) Logger.error('guardianRegistrationAddress is not initialized')
+  state.guardianRegistration = new state.web3.eth.Contract(regAbi, state.guardianRegistrationAddress);
+  if(!state.guardianRegistration) Logger.error(`failed to create state.guardianRegistration`);
 }
 
 function getAbiForContract(address: string, contractName: ContractRegistryKey) {

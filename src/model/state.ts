@@ -61,6 +61,8 @@ export class State {
   signer?: Signer;
   ethereumElectionsContract?: Contract;
   guardianRegistration?: Contract;
+  guardianRegistrationAddress?:string;
+  
 
   // orbs clients - updated by read/vchain-reputations.ts
   orbsAccount = Orbs.createAccount();
