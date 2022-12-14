@@ -69,6 +69,7 @@ export class State {
   orbsClientPerVchain: { [VirtualChainId: string]: Orbs.Client } = {};
 
   chainId = 1;
+  isRegistered:boolean|undefined = undefined;
 }
 
 // helpers

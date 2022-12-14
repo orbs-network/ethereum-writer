@@ -79,14 +79,20 @@ async function runLoopTick(config: Configuration, state: State) {
     await readEtherBalance(config.NodeOrbsAddress, state);
   }
 
+  // first time update isRegistered
+  if(state.isRegistered == undefined){
+    state.isRegistered = await isGuardianRegistered(state);
+  }
+
   // query ethereum for Elections.canJoinCommittee (call)
+  // every 10 min default
+  // add update to isRegistered
   let ethereumCanJoinCommittee = false;
   if (
-    getCurrentClockTime() - state.EthereumCanJoinCommitteeLastPollTime >
-      config.EthereumCanJoinCommitteePollTimeSeconds &&
-    shouldCheckCanJoinCommittee(state, config)
-  ) {
-    ethereumCanJoinCommittee = await queryCanJoinCommittee(config.NodeOrbsAddress, state);
+    getCurrentClockTime() - state.EthereumCanJoinCommitteeLastPollTime > config.EthereumCanJoinCommitteePollTimeSeconds &&
+    shouldCheckCanJoinCommittee(state, config)) {
+      ethereumCanJoinCommittee = await queryCanJoinCommittee(config.NodeOrbsAddress, state);
+      state.isRegistered = await isGuardianRegistered(state);
   }
 
   // STEP 2: update all state machine logic (compute)
@@ -113,22 +119,25 @@ async function runLoopTick(config: Configuration, state: State) {
     state.EthereumSyncStatus = newEthereumSyncStatus;
   }
 
-  // STEP 3: write all data (io) -Yuval: Only if registered
-
-  // send ready-to-sync / ready-for-comittee if needed, we don't mind checking this often (2min)
-  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config) && isGuardianRegistered(state)) {
+  // STEP 3: write all data (io) -Yuval: Only if registered in current image's chain network
+  
+  // send ready-to-sync / ready-for-committee if needed, we don't mind checking this often (2min)
+  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config)) {    
     Logger.log(`Decided to send ready-for-committee.`);
     await sendEthereumElectionsTransaction('ready-for-committee', config.NodeOrbsAddress, state, config);
-  } else if (shouldNotifyReadyToSync(state, config) && isGuardianRegistered(state)) {
+    
+  } else if (shouldNotifyReadyToSync(state, config)) {    
     Logger.log(`Decided to send ready-to-sync.`);
-    await sendEthereumElectionsTransaction('ready-to-sync', config.NodeOrbsAddress, state, config);
+    await sendEthereumElectionsTransaction('ready-to-sync', config.NodeOrbsAddress, state, config);    
   }
 
-  // send vote unreadys if needed, we don't mind checking this often (2min)
-  const toVoteUnready = getAllGuardiansToVoteUnready(state, config);
-  if (toVoteUnready.length > 0) {
-    Logger.log(`Decided to send vote unreadys against validators: ${toVoteUnready.map((n) => n.EthAddress)}.`);
-    await sendEthereumVoteUnreadyTransaction(toVoteUnready, config.NodeOrbsAddress, state, config);
+  // send vote unready if needed, we don't mind checking this often (2min)
+  if(state.isRegistered){ 
+    const toVoteUnready = getAllGuardiansToVoteUnready(state, config);
+    if (toVoteUnready.length > 0) {
+      Logger.log(`Decided to send vote unreadys against validators: ${toVoteUnready.map((n) => n.EthAddress)}.`);
+      await sendEthereumVoteUnreadyTransaction(toVoteUnready, config.NodeOrbsAddress, state, config);
+    }
   }
 }
 
