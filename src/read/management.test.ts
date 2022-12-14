@@ -79,6 +79,9 @@ const validManagementStatusResponse = {
         Name: 'Guardian4',
       },
     ],
+    CurrentContractAddress:{
+      guardiansRegistration:'ce97f8c79228c53b8b9ad86800a493d1e7e5d1e3'
+    },
     Guardians: {
       '29ce860a2247d97160d6dfc087a15f41e2349087': {
         EthAddress: '29ce860a2247d97160d6dfc087a15f41e2349087',
