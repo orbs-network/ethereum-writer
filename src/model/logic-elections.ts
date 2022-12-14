@@ -14,6 +14,7 @@ export async function isGuardianRegistered(state: State): Promise<boolean> {
 export function shouldNotifyReadyToSync(state: State, config: EthereumElectionsParams): boolean {
   if (state.EthereumCommittedTxStats[getToday()] >= config.EthereumMaxCommittedDailyTx) return false;
   if (state.EthereumSyncStatus != 'operational') return false;
+  if(!state.isRegistered) return false;
 
   if (
     !(state.ManagementIsStandby || state.ManagementInCommittee) && // we only refresh standby nodes that are in-sync
@@ -50,6 +51,8 @@ export function shouldNotifyReadyForCommittee(
   if (state.EthereumSyncStatus != 'operational') return false;
   if (config.ElectionsAuditOnly) return false;
   if (state.VchainSyncStatus != 'in-sync') return false;
+  if(!state.isRegistered) return false;
+  
 
   if (
     !state.ManagementInCommittee &&
