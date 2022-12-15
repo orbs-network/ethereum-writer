@@ -6,11 +6,6 @@ import { Configuration } from '../config';
 
 const MAX_STANDBYS = 5; // in future, can be taken from the MaxStandbysChanged event
 
-
-export async function isGuardianRegistered(state: State): Promise<boolean> {
-  
-  return await state.guardianRegistration?.methods.isGuardianRegistered(state.myEthGuardianAddress);
-}
 export function shouldNotifyReadyToSync(state: State, config: EthereumElectionsParams): boolean {
   if (state.EthereumCommittedTxStats[getToday()] >= config.EthereumMaxCommittedDailyTx) return false;
   if (state.EthereumSyncStatus != 'operational') return false;

@@ -5,6 +5,7 @@ import {
   sendEthereumVoteUnreadyTransaction,
   readPendingTransactionStatus,
   queryCanJoinCommittee,
+  //isGuardianRegistered,
 } from './ethereum';
 import Web3 from 'web3';
 import { State, EthereumTxStatus } from '../model/state';
@@ -15,6 +16,7 @@ import { exampleConfig } from '../config.example';
 import { TransactionReceipt } from 'web3-core';
 import { getReceiptFeeInEth } from './ethereum-helpers';
 import nock from 'nock';
+
 
 test('initializes web3 and contracts', async (t) => {
   const state = new State();
@@ -477,3 +479,32 @@ test('queryCanJoinCommittee works', async (t) => {
 
   t.is(await queryCanJoinCommittee(exampleConfig.NodeOrbsAddress, state), true);
 });
+
+// test.only('GuardianRegistration::isRegistered', async (t) => {
+//   const state = new State();
+//   const exampleManagementServiceEndpoint = 'http://management-service:8080';
+//   const myOrbsAddress = '86544bdd6c8b957cd198252c45fa215fc3892126';
+//   await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
+
+//   nock(/ganache/)
+//     .post(/.*/, /eth_chainId/)
+//     .reply(200, JSON.stringify({"jsonrpc":"2.0","id":1,"result":"0x1"}));
+
+//   await initWeb3Client('http://ganache:7545/', '0xf8B352100dE45D2668768290504DC89e85766E02', state);
+//   t.assert(state.web3);
+//   t.assert(state.ethereumElectionsContract);
+//   // t.assert(state.ethereumElectionsContract);
+
+//   t.assert(state.guardianRegistration);
+//   t.log("guardianRegistrationAddress: " + state.guardianRegistrationAddress);
+//   //t.log("isGuardianRegistered: " + isGuardianRegistered);
+
+//   //const zxStaging = 'de6dd96680a6a4533d59be091b7793d92aecc7a8';
+//   //const isreg = undefined;
+//   // try{    
+//   //   isreg = await isGuardianRegistered(state);
+//   // }catch(e){
+//   //   t.log(e);
+//   //     }
+//   // t.log('isRegistered', isreg);
+// });

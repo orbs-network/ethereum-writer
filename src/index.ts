@@ -12,8 +12,7 @@ import {
   shouldNotifyReadyForCommittee,
   shouldNotifyReadyToSync,
   shouldCheckCanJoinCommittee,
-  calcTimeEnteredTopology,  
-  isGuardianRegistered
+  calcTimeEnteredTopology  
 } from './model/logic-elections';
 import { getAllGuardiansToVoteUnready } from './model/logic-voteunready';
 import Signer from 'orbs-signer-client';
@@ -24,6 +23,7 @@ import {
   sendEthereumElectionsTransaction,
   sendEthereumVoteUnreadyTransaction,
   queryCanJoinCommittee,
+  isGuardianRegistered
 } from './write/ethereum';
 
 export async function runLoop(config: Configuration) {

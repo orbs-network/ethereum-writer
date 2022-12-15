@@ -229,3 +229,7 @@ export async function queryCanJoinCommittee(nodeOrbsAddress: string, state: Stat
 
   return res;
 }
+
+export async function isGuardianRegistered(state: State): Promise<boolean> {  
+  return await state.guardianRegistration?.methods.isRegistered(state.myEthGuardianAddress);  
+}
