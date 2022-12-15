@@ -3,7 +3,7 @@ import { sleep, getCurrentClockTime } from './helpers';
 import { Configuration } from './config';
 import { State } from './model/state';
 import { writeStatusToDisk } from './write/status';
-import { readManagementStatus } from './read/management';
+import { readManagementStatus, isGuardianRegistered } from './read/management';
 import { readAllVchainReputations } from './read/vchain-reputations';
 import { readAllVchainMetrics } from './read/vchain-metrics';
 import { calcVchainSyncStatus } from './model/logic-vcsync';
@@ -22,11 +22,11 @@ import {
   readPendingTransactionStatus,
   sendEthereumElectionsTransaction,
   sendEthereumVoteUnreadyTransaction,
-  queryCanJoinCommittee,
-  isGuardianRegistered
+  queryCanJoinCommittee,  
 } from './write/ethereum';
 
 export async function runLoop(config: Configuration) {
+  // TODO: Yuval- contracts addresses are not updated in case of RegistryChange
   const state = await initializeState(config);
   // initialize status.json to make sure healthcheck passes from now on
   writeStatusToDisk(config.StatusJsonPath, state, config);

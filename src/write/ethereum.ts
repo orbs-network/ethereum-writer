@@ -34,14 +34,7 @@ export async function initWeb3Client(ethereumEndpoint: string, electionsContract
   
   // init contracts
   const electionsAbi = getAbiForContract(electionsContractAddress, 'elections');
-  state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);
-  
-  Logger.log(`guardianRegAddress: ${state.guardianRegistrationAddress} `);
-  const regAbi = getAbiByContractRegistryKey('guardiansRegistration');
-  if(!regAbi) Logger.error(`failed to create regApi`);
-  if(!state.guardianRegistrationAddress) Logger.error('guardianRegistrationAddress is not initialized')
-  state.guardianRegistration = new state.web3.eth.Contract(regAbi, state.guardianRegistrationAddress);
-  if(!state.guardianRegistration) Logger.error(`failed to create state.guardianRegistration`);
+  state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);  
 }
 
 function getAbiForContract(address: string, contractName: ContractRegistryKey) {
@@ -228,8 +221,4 @@ export async function queryCanJoinCommittee(nodeOrbsAddress: string, state: Stat
   Logger.log(`Queried canJoinCommittee for account ${nodeOrbsAddress}: ${res}.`);
 
   return res;
-}
-
-export async function isGuardianRegistered(state: State): Promise<boolean> {  
-  return await state.guardianRegistration?.methods.isRegistered(state.myEthGuardianAddress);  
 }
