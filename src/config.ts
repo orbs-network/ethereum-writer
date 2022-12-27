@@ -4,16 +4,11 @@ export interface Configuration {
   SignerEndpoint: string; // does not have default
   EthereumElectionsContract: string; // does not have default
   NodeOrbsAddress: string; // does not have default
-  VirtualChainEndpointSchema: string;
   StatusJsonPath: string;
   RunLoopPollTimeSeconds: number;
   EthereumBalancePollTimeSeconds: number; // multiple of RunLoopPollTimeSeconds
   EthereumCanJoinCommitteePollTimeSeconds: number; // multiple of RunLoopPollTimeSeconds
   OrbsReputationsContract: string;
-  VchainUptimeRequiredSeconds: number;
-  VchainSyncThresholdSeconds: number;
-  VchainOutOfSyncThresholdSeconds: number;
-  VchainStuckThresholdSeconds: number;
   EthereumSyncRequirementSeconds: number;
   FailToSyncVcsTimeoutSeconds: number;
   ElectionsRefreshWindowSeconds: number;
@@ -30,13 +25,8 @@ export interface Configuration {
 
 export const defaultConfiguration = {
   StatusJsonPath: './status/status.json',
-  VirtualChainEndpointSchema: 'http://chain-{{ID}}:8080',
   RunLoopPollTimeSeconds: 2 * 60,
   OrbsReputationsContract: '_Committee',
-  VchainUptimeRequiredSeconds: 5,
-  VchainSyncThresholdSeconds: 5 * 60,
-  VchainOutOfSyncThresholdSeconds: 60 * 60,
-  VchainStuckThresholdSeconds: 2 * 60 * 60,
   EthereumBalancePollTimeSeconds: 4 * 60 * 60,
   EthereumCanJoinCommitteePollTimeSeconds: 10 * 60,
   EthereumSyncRequirementSeconds: 20 * 60,
@@ -78,9 +68,6 @@ export function validateConfiguration(config: Configuration) {
   if (config.NodeOrbsAddress.length != '11f4d0a3c12e86b4b5f39b213f7e19d048276dae'.length) {
     throw new Error(`NodeOrbsAddress has incorrect length: ${config.NodeOrbsAddress.length}.`);
   }
-  if (!config.VirtualChainEndpointSchema) {
-    throw new Error(`VirtualChainEndpointSchema is empty in config.`);
-  }
   if (!config.StatusJsonPath) {
     throw new Error(`StatusJsonPath is empty in config.`);
   }
@@ -104,30 +91,6 @@ export function validateConfiguration(config: Configuration) {
   }
   if (!config.OrbsReputationsContract) {
     throw new Error(`OrbsReputationsContract is empty in config.`);
-  }
-  if (!config.VchainUptimeRequiredSeconds) {
-    throw new Error(`VchainUptimeRequiredSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainUptimeRequiredSeconds != 'number') {
-    throw new Error(`VchainUptimeRequiredSeconds is not a number.`);
-  }
-  if (!config.VchainSyncThresholdSeconds) {
-    throw new Error(`VchainSyncThresholdSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainSyncThresholdSeconds != 'number') {
-    throw new Error(`VchainSyncThresholdSeconds is not a number.`);
-  }
-  if (!config.VchainOutOfSyncThresholdSeconds) {
-    throw new Error(`VchainOutOfSyncThresholdSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainOutOfSyncThresholdSeconds != 'number') {
-    throw new Error(`VchainOutOfSyncThresholdSeconds is not a number.`);
-  }
-  if (!config.VchainStuckThresholdSeconds) {
-    throw new Error(`VchainStuckThresholdSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainStuckThresholdSeconds != 'number') {
-    throw new Error(`VchainStuckThresholdSeconds is not a number.`);
   }
   if (!config.EthereumSyncRequirementSeconds) {
     throw new Error(`EthereumSyncRequirementSeconds is empty or zero.`);

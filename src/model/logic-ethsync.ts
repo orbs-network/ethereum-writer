@@ -7,7 +7,6 @@ export function calcEthereumSyncStatus(state: State, config: EthereumSyncStatusP
   if (!isEthValid(state, config)) return 'out-of-sync';
   if (isAnyTxReverted(state)) return 'need-reset';
   if (isNewlyVotedUnready(state)) return 'need-reset';
-  if (isFailedToSyncVcs(state, config)) return 'need-reset';
   if (isAnyTxPending(state)) return 'tx-pending';
   return 'operational';
 }
@@ -31,23 +30,6 @@ function isNewlyVotedUnready(state: State): boolean {
   if (state.ServiceLaunchTime > state.ManagementMyElectionsStatus.LastUpdateTime) return false;
   Logger.error(`Found that we have been newly voted unready since RTS is false, reset needed!`);
   return true;
-}
-
-function isFailedToSyncVcs(state: State, config: EthereumSyncStatusParams): boolean {
-  const now = getCurrentClockTime();
-
-  // maintain a helper state variable to see how long we're in failed to sync
-  if (state.ManagementIsStandby && state.VchainSyncStatus != 'in-sync') {
-    if (state.TimeEnteredStandbyWithoutVcSync == 0) state.TimeEnteredStandbyWithoutVcSync = now;
-  } else state.TimeEnteredStandbyWithoutVcSync = 0;
-
-  // rely on the helper state variable to respond
-  if (state.TimeEnteredStandbyWithoutVcSync == 0) return false;
-  if (now - state.TimeEnteredStandbyWithoutVcSync > config.FailToSyncVcsTimeoutSeconds) {
-    Logger.error(`We're standby but can't sync vcs since ${state.TimeEnteredStandbyWithoutVcSync}, reset needed!`);
-    return true;
-  }
-  return false;
 }
 
 function isAnyTxReverted(state: State): boolean {

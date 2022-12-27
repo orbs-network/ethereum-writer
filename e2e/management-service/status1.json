@@ -54,22 +54,6 @@
         }
       }
     },
-    "CurrentVirtualChains": {
-      "42": {
-        "Expiration": 1602409043,
-        "GenesisRefTime": 1592409043,
-        "IdentityType": 0,
-        "RolloutGroup": "main",
-        "Tier": "defaultTier"
-      },
-      "43": {
-        "Expiration": 1602409043,
-        "GenesisRefTime": 1592409043,
-        "IdentityType": 0,
-        "RolloutGroup": "main",
-        "Tier": "defaultTier"
-      }
-    },
     "CurrentTopology": [
       {
         "EthAddress": "8a670ddc1910c27278ab7db2a148a0dccc6bf0f5",

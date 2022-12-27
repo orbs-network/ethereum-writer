@@ -21,7 +21,6 @@ export function writeStatusToDisk(filePath: string, state: State, config: Config
         Semantic: state.CurrentVersion,
       },
       EthereumSyncStatus: state.EthereumSyncStatus,
-      VchainSyncStatus: state.VchainSyncStatus,
       EthereumBalanceLastPollTime: state.EthereumBalanceLastPollTime,
       EtherBalance: state.EtherBalance,
       EthereumCanJoinCommitteeLastPollTime: state.EthereumCanJoinCommitteeLastPollTime,
@@ -31,17 +30,11 @@ export function writeStatusToDisk(filePath: string, state: State, config: Config
       EthereumLastVoteUnreadyTime: state.EthereumLastVoteUnreadyTime,
       EthereumCommittedTxStats: state.EthereumCommittedTxStats,
       EthereumFeesStats: state.EthereumFeesStats,
-      VchainReputationsLastPollTime: state.VchainReputationsLastPollTime,
-      VchainReputations: state.VchainReputations,
-      VchainMetricsLastPollTime: state.VchainMetricsLastPollTime,
-      VchainMetrics: state.VchainMetrics,
       ManagementLastPollTime: state.ManagementLastPollTime,
       ManagementEthRefBlock: state.ManagementEthRefBlock,
       ManagementInCommittee: state.ManagementInCommittee,
       ManagementIsStandby: state.ManagementIsStandby,
       ManagementMyElectionStatus: state.ManagementMyElectionsStatus,
-      TimeEnteredStandbyWithoutVcSync: state.TimeEnteredStandbyWithoutVcSync,
-      TimeEnteredBadReputation: state.TimeEnteredBadReputation,
       TimeEnteredTopology: state.TimeEnteredTopology,
       Config: config,
     },
@@ -68,7 +61,6 @@ function getStatusText(state: State) {
   const res = [];
   res.push();
   res.push(`EthSyncStatus = ${state.EthereumSyncStatus}`);
-  res.push(`VcSyncStatus = ${state.VchainSyncStatus}`);
   res.push(`EtherBalance = ${weiToEth(state.EtherBalance)} ETH`);
   const tenDays = getTenDayPeriod();
   res.push(`TxFeesIn10Days = ${(state.EthereumFeesStats[tenDays] ?? 0).toFixed(6)} ETH`);

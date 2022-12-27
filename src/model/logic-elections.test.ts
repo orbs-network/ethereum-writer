@@ -60,10 +60,8 @@ function getAuditConfig() {
 
 test('shouldNotifyReadyToSync: new node with standbys full', (t) => {
   const state = getExampleState();
-  state.VchainSyncStatus = 'not-exist';
   t.false(shouldNotifyReadyToSync(state, exampleConfig));
 
-  state.VchainSyncStatus = 'exist-not-in-sync';
   t.true(shouldNotifyReadyToSync(state, exampleConfig));
 
   state.ManagementMyElectionsStatus = {
@@ -102,7 +100,6 @@ test('shouldNotifyReadyToSync: new node with standbys full', (t) => {
 
 test('shouldNotifyReadyToSync: standby slot becomes available', (t) => {
   const state = getExampleState();
-  state.VchainSyncStatus = 'exist-not-in-sync';
   state.ManagementMyElectionsStatus = {
     LastUpdateTime: getCurrentClockTime() - 2 * 24 * 60 * 60,
     ReadyToSync: true,
@@ -123,7 +120,6 @@ test('shouldNotifyReadyToSync: standby slot becomes available', (t) => {
 
 test('shouldNotifyReadyToSync: only when ethereum state is operational', (t) => {
   const state = getExampleState();
-  state.VchainSyncStatus = 'exist-not-in-sync';
   t.true(shouldNotifyReadyToSync(state, exampleConfig));
 
   state.EthereumSyncStatus = 'out-of-sync';
@@ -142,13 +138,10 @@ test('shouldNotifyReadyToSync: only when ethereum state is operational', (t) => 
 test('shouldNotifyReadyToSync: audit-only keeps position in standby', (t) => {
   const state = getExampleState();
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'in-sync';
   t.true(shouldNotifyReadyToSync(state, getAuditConfig()));
 
-  state.VchainSyncStatus = 'exist-not-in-sync';
   t.false(shouldNotifyReadyToSync(state, getAuditConfig()));
 
-  state.VchainSyncStatus = 'in-sync';
   state.ManagementMyElectionsStatus = {
     LastUpdateTime: getCurrentClockTime() - 2 * 24 * 60 * 60,
     ReadyToSync: true,
@@ -169,16 +162,13 @@ test('shouldNotifyReadyToSync: audit-only keeps position in standby', (t) => {
 test('shouldNotifyReadyToSync: too many successful daily tx', (t) => {
   const state = getExampleState();
   state.EthereumCommittedTxStats[getToday()] = exampleConfig.EthereumMaxCommittedDailyTx;
-  state.VchainSyncStatus = 'exist-not-in-sync';
   t.false(shouldNotifyReadyToSync(state, exampleConfig));
 });
 
 test('shouldNotifyReadyForCommittee: new node finished syncing', (t) => {
   const state = getExampleState();
-  state.VchainSyncStatus = 'exist-not-in-sync';
   t.false(shouldNotifyReadyForCommittee(state, false, exampleConfig));
 
-  state.VchainSyncStatus = 'in-sync';
   t.true(shouldNotifyReadyForCommittee(state, false, exampleConfig));
 
   t.false(shouldNotifyReadyForCommittee(state, false, getAuditConfig()));
@@ -210,7 +200,6 @@ test('shouldNotifyReadyForCommittee: new node finished syncing', (t) => {
 test('shouldNotifyReadyForCommittee: standby in sync going stale', (t) => {
   const state = getExampleState();
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'in-sync';
   state.ManagementMyElectionsStatus = {
     LastUpdateTime: getCurrentClockTime() - 2 * 24 * 60 * 60,
     ReadyToSync: true,
@@ -235,7 +224,6 @@ test('shouldNotifyReadyForCommittee: standby in sync going stale', (t) => {
 test('shouldNotifyReadyForCommittee: only when ethereum state is operational', (t) => {
   const state = getExampleState();
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'in-sync';
   state.ManagementMyElectionsStatus = {
     LastUpdateTime: getCurrentClockTime() - 20 * 24 * 60 * 60,
     ReadyToSync: true,
@@ -262,14 +250,12 @@ test('shouldNotifyReadyForCommittee: only when ethereum state is operational', (
 test('shouldNotifyReadyForCommittee: too many successful daily tx', (t) => {
   const state = getExampleState();
   state.EthereumCommittedTxStats[getToday()] = exampleConfig.EthereumMaxCommittedDailyTx;
-  state.VchainSyncStatus = 'in-sync';
   t.false(shouldNotifyReadyForCommittee(state, false, exampleConfig));
 });
 
 test('shouldCheckCanJoinCommittee: only when conditions are right', (t) => {
   const state = getExampleState();
   state.EthereumSyncStatus = 'operational';
-  state.VchainSyncStatus = 'in-sync';
   state.ManagementInCommittee = false;
 
   t.true(shouldCheckCanJoinCommittee(state, exampleConfig));
@@ -280,9 +266,7 @@ test('shouldCheckCanJoinCommittee: only when conditions are right', (t) => {
   state.EthereumSyncStatus = 'operational';
   t.true(shouldCheckCanJoinCommittee(state, exampleConfig));
 
-  state.VchainSyncStatus = 'exist-not-in-sync';
   t.false(shouldCheckCanJoinCommittee(state, exampleConfig));
-  state.VchainSyncStatus = 'in-sync';
   t.true(shouldCheckCanJoinCommittee(state, exampleConfig));
 
   state.ManagementInCommittee = true;

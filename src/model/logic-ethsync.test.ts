@@ -92,19 +92,14 @@ test('failed to sync vcs becomes stuck until reset', (t) => {
   const state = getExampleState();
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync == 0);
 
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'exist-not-in-sync';
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync > 0);
 
-  state.TimeEnteredStandbyWithoutVcSync = getCurrentClockTime() - 25 * 60 * 60;
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'need-reset');
 
-  state.TimeEnteredStandbyWithoutVcSync = 0;
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'need-reset');
 });
@@ -113,37 +108,26 @@ test('failed to sync vcs counter is reset if out of standby or vcs sync', (t) =>
   const state = getExampleState();
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync == 0);
 
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'exist-not-in-sync';
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync > 0);
 
   state.ManagementIsStandby = false;
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync == 0);
 
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'not-exist';
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync > 0);
 
-  state.VchainSyncStatus = 'in-sync';
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync == 0);
 
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'not-exist';
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync > 0);
 
-  state.TimeEnteredStandbyWithoutVcSync = getCurrentClockTime() - 25 * 60 * 60;
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'need-reset');
 });
@@ -152,14 +136,11 @@ test('eth out of sync masks failed to sync vcs', (t) => {
   const state = getExampleState();
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync == 0);
 
   state.ManagementRefTime = getCurrentClockTime() - 120 * 60;
   state.ManagementIsStandby = true;
-  state.VchainSyncStatus = 'exist-not-in-sync';
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'out-of-sync');
-  t.assert(state.TimeEnteredStandbyWithoutVcSync == 0);
 });
 
 test('pending tx then final then another pending', (t) => {

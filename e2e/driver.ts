@@ -11,12 +11,10 @@ import HDWalletProvider from 'truffle-hdwallet-provider';
 import Web3 from 'web3';
 import { Driver as EthereumPosDriver } from '@orbs-network/orbs-ethereum-contracts-v2';
 import BN from 'bn.js';
-import { GammaDriver } from './gamma/driver';
 
 export class TestEnvironment {
   private envName: string = '';
   public ethereumPosDriver: EthereumPosDriver;
-  public gammaDriver: GammaDriver;
   public nodeOrbsAddress: string;
   public testLogger: (lines: string) => void;
 
@@ -29,15 +27,10 @@ export class TestEnvironment {
       SignerEndpoint: 'http://signer:7777',
       EthereumElectionsContract: this.ethereumPosDriver.elections.address,
       NodeOrbsAddress: this.nodeOrbsAddress.substr(2).toLowerCase(), // remove "0x",
-      VirtualChainEndpointSchema: 'http://chain-{{ID}}:8080',
       RunLoopPollTimeSeconds: 1,
       EthereumBalancePollTimeSeconds: 1,
       EthereumCanJoinCommitteePollTimeSeconds: 1,
       OrbsReputationsContract: 'MockCommittee',
-      VchainUptimeRequiredSeconds: 2,
-      VchainSyncThresholdSeconds: 5 * 60,
-      VchainOutOfSyncThresholdSeconds: 60 * 60,
-      VchainStuckThresholdSeconds: 2 * 60 * 60,
       EthereumSyncRequirementSeconds: 20 * 60,
       FailToSyncVcsTimeoutSeconds: 24 * 60 * 60,
       ElectionsRefreshWindowSeconds: 2 * 60 * 60,
@@ -57,16 +50,12 @@ export class TestEnvironment {
   launchServices() {
     test.serial.before((t) => t.log('[E2E] driver launchServices() start'));
 
-    // step 1 - launch ganache, management-service mock and gamma dockers
-    test.serial.before((t) => t.log('[E2E] launch ganache, signer, management-service, chain-42, chain-43 dockers'));
+    // step 1 - launch ganache, management-service mock
+    test.serial.before((t) => t.log('[E2E] launch ganache, signer, management-service'));
     this.envName = dockerComposeTool(
       test.serial.before.bind(test.serial),
       test.serial.after.always.bind(test.serial.after),
-      this.pathToDockerCompose,
-      {
-        startOnlyTheseServices: ['ganache', 'signer', 'management-service', 'chain-42', 'chain-43'],
-        containerCleanUp: false,
-      } as any
+      this.pathToDockerCompose
     );
 
     // step 2 - let ganache warm up
@@ -114,15 +103,6 @@ export class TestEnvironment {
       await peer.registerAsGuardian();
       await peer.readyForCommittee();
       console.log(`[posv2] peer ethAddress for vote unreadys = ${peer.address}, orbsAddress = ${peer.orbsAddress}`);
-    });
-
-    // step 4 - deploy Orbs contracts to gamma
-    test.serial.before(async (t) => {
-      t.log('[E2E] deploy Orbs contracts to gamma');
-      t.timeout(60 * 1000);
-      // note that gamma virtual chain id is always hard-coded as 42
-      const gammaAddress = await getAddressForService(this.envName, this.pathToDockerCompose, 'chain-42', 8080);
-      this.gammaDriver = await new GammaDriver().init(`http://localhost:${portFromAddress(gammaAddress)}`, 42);
     });
 
     // step 5 - write config file for app

@@ -4,9 +4,6 @@ import { Configuration } from './config';
 import { State } from './model/state';
 import { writeStatusToDisk } from './write/status';
 import { readManagementStatus } from './read/management';
-import { readAllVchainReputations } from './read/vchain-reputations';
-import { readAllVchainMetrics } from './read/vchain-metrics';
-import { calcVchainSyncStatus } from './model/logic-vcsync';
 import { calcEthereumSyncStatus } from './model/logic-ethsync';
 import {
   shouldNotifyReadyForCommittee,
@@ -59,12 +56,6 @@ async function runLoopTick(config: Configuration, state: State) {
   // refresh all info from management-service, we don't mind doing this often (2min)
   await readManagementStatus(config.ManagementServiceEndpoint, config.NodeOrbsAddress, state);
 
-  // refresh all vchain metrics to see if they're live and in sync
-  await readAllVchainMetrics(config.VirtualChainEndpointSchema, state);
-
-  // refresh all vchain reputations to prepare for vote unreadys
-  await readAllVchainReputations(config.VirtualChainEndpointSchema, config.OrbsReputationsContract, state);
-
   // refresh pending ethereum transactions status for ready-to-sync / ready-for-comittee
   await readPendingTransactionStatus(state.EthereumLastElectionsTx, state, config);
 
@@ -94,13 +85,6 @@ async function runLoopTick(config: Configuration, state: State) {
     const logMessage = state.TimeEnteredTopology == -1 ? `Exited topology` : `Entered topology`;
     Logger.log(logMessage);
     state.TimeEnteredTopology = newTimeEnteredTopology;
-  }
-
-  // vchain sync status state machine
-  const newVchainSyncStatus = calcVchainSyncStatus(state, config);
-  if (newVchainSyncStatus != state.VchainSyncStatus) {
-    Logger.log(`VchainSyncStatus changing from ${state.VchainSyncStatus} to ${newVchainSyncStatus}.`);
-    state.VchainSyncStatus = newVchainSyncStatus;
   }
 
   // ethereum elections notifications state machine

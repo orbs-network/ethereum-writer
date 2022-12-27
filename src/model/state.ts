@@ -1,6 +1,5 @@
 import Web3 from 'web3';
 import { Contract } from 'web3-eth-contract';
-import * as Orbs from 'orbs-client-sdk';
 import { getCurrentClockTime, getCurrentVersion } from '../helpers';
 import Signer from 'orbs-signer-client';
 
@@ -14,7 +13,6 @@ export class State {
   ManagementRefTime = 0; // UTC seconds
   ManagementEthRefBlock = 0;
   ManagementEthToOrbsAddress: { [EthAddress: string]: string } = {};
-  ManagementVirtualChains: { [VirtualChainId: string]: ManagementVirtualChain } = {};
   ManagementInCommittee = false;
   ManagementIsStandby = false;
   ManagementMyElectionsStatus?: ManagementElectionsStatus;
@@ -22,14 +20,6 @@ export class State {
   ManagementCurrentCommittee: CommitteeMember[] = [];
   ManagementCurrentStandbys: { EthAddress: string }[] = [];
   ManagementCurrentTopology: { EthAddress: string }[] = [];
-
-  // updated by read/vchain-metrics.ts
-  VchainMetricsLastPollTime = 0; // UTC seconds
-  VchainMetrics: { [VirtualChainId: string]: VchainMetrics } = {};
-
-  // updated by read/vchain-reputations.ts
-  VchainReputationsLastPollTime = 0; // UTC seconds
-  VchainReputations: { [VirtualChainId: string]: VchainReputations } = {};
 
   // updated by write/ethereum.ts
   EthereumLastElectionsTx?: EthereumTxStatus;
@@ -44,14 +34,7 @@ export class State {
 
   // updated by index.ts
   TimeEnteredTopology = -1; // UTC seconds
-  VchainSyncStatus: VchainSyncStatusEnum = 'not-exist';
   EthereumSyncStatus: EthereumSyncStatusEnum = 'out-of-sync';
-
-  // updated by model/logic-ethsync.ts
-  TimeEnteredStandbyWithoutVcSync = 0; // UTC seconds
-
-  // updated by model/logic-voteout.ts
-  TimeEnteredBadReputation: { [EthAddress: string]: BadReputationSince } = {};
 
   // non-serializable objects (lowercase)
 
@@ -60,31 +43,14 @@ export class State {
   signer?: Signer;
   ethereumElectionsContract?: Contract;
 
-  // orbs clients - updated by read/vchain-reputations.ts
-  orbsAccount = Orbs.createAccount();
-  orbsClientPerVchain: { [VirtualChainId: string]: Orbs.Client } = {};
-
   chainId = 1;
 }
 
 // helpers
 
-export type VchainSyncStatusEnum = 'not-exist' | 'exist-not-in-sync' | 'in-sync';
-
 export type EthereumSyncStatusEnum = 'out-of-sync' | 'operational' | 'tx-pending' | 'need-reset';
 
-export type VchainReputations = { [OrbsAddress: string]: number };
-
-export type BadReputationSince = { [VirtualChainId: string]: number }; // UTC seconds
-
 export type CommitteeMember = { EthAddress: string; Weight: number };
-
-export interface VchainMetrics {
-  LastBlockHeight: number;
-  LastBlockTime: number; // UTC seconds (latest contiguous block in the chain - when was it proposed/signed)
-  UptimeSeconds: number;
-  LastCommitTime: number; // UTC seconds (latest block we synced - when did we sync it)
-}
 
 export type GasPriceStrategy = 'discount' | 'recommended';
 
@@ -100,14 +66,6 @@ export interface EthereumTxStatus {
   OnFinal?: () => void;
 }
 
-// taken from management-service/src/model/state.ts
-export interface ManagementVirtualChain {
-  Expiration: number;
-  RolloutGroup: string;
-  IdentityType: number;
-  Tier: string;
-  GenesisRefTime: number;
-}
 
 // taken from management-service/src/model/state.ts
 export interface ManagementElectionsStatus {

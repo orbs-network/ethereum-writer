@@ -12,8 +12,7 @@ export function shouldNotifyReadyToSync(state: State, config: EthereumElectionsP
 
   if (
     !(state.ManagementIsStandby || state.ManagementInCommittee) && // we only refresh standby nodes that are in-sync
-    (isMyUpdateStale(state, config) || isStandbyAvailable(state)) &&
-    state.VchainSyncStatus == 'exist-not-in-sync'
+    (isMyUpdateStale(state, config) || isStandbyAvailable(state))
   ) {
     Logger.log(
       `shouldNotifyReadyToSync because node is deployed, not in topology and does not have a non-stale RTS in place.`
@@ -24,8 +23,7 @@ export function shouldNotifyReadyToSync(state: State, config: EthereumElectionsP
   if (
     config.ElectionsAuditOnly &&
     state.ManagementIsStandby &&
-    isMyUpdateStale(state, config) &&
-    state.VchainSyncStatus == 'in-sync'
+    isMyUpdateStale(state, config)
   ) {
     Logger.log(
       `shouldNotifyReadyToSync because audit only node, in sync that want to keep its position in the standby.`
@@ -44,7 +42,6 @@ export function shouldNotifyReadyForCommittee(
   if (state.EthereumCommittedTxStats[getToday()] >= config.EthereumMaxCommittedDailyTx) return false;
   if (state.EthereumSyncStatus != 'operational') return false;
   if (config.ElectionsAuditOnly) return false;
-  if (state.VchainSyncStatus != 'in-sync') return false;
 
   if (
     !state.ManagementInCommittee &&
@@ -74,7 +71,6 @@ export function shouldNotifyReadyForCommittee(
 export function shouldCheckCanJoinCommittee(state: State, config: EthereumElectionsParams): boolean {
   if (state.EthereumSyncStatus != 'operational') return false;
   if (config.ElectionsAuditOnly) return false;
-  if (state.VchainSyncStatus != 'in-sync') return false;
   if (state.ManagementInCommittee) return false;
   return true;
 }

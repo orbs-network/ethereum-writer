@@ -157,22 +157,6 @@ const validManagementStatusResponse = {
         Contact: 'Guardian4-contact',
       },
     },
-    CurrentVirtualChains: {
-      '1000000': {
-        Expiration: 1592400011,
-        GenesisRefTime: 1592400010,
-        IdentityType: 0,
-        RolloutGroup: 'main',
-        Tier: 'defaultTier',
-      },
-      '1000001': {
-        Expiration: 1592400021,
-        GenesisRefTime: 1592400020,
-        IdentityType: 0,
-        RolloutGroup: 'canary',
-        Tier: 'defaultTier',
-      },
-    },
     ExtraField: 'something',
   },
 };
@@ -200,7 +184,6 @@ test.serial('reads data from valid ManagementStatus', async (t) => {
     '8a670ddc1910c27278ab7db2a148a0dccc6bf0f5': '7c2300d32ebf4a6ae9edf95f4f57ab5a07488c2e',
     cb6642be414696f77336dae06fed3775f08de0ea: '33546759bdcfb5c753a4102b86b3e73e714d5213',
   });
-  t.deepEqual(state.ManagementVirtualChains, validManagementStatusResponse.Payload.CurrentVirtualChains);
   t.is(state.ManagementInCommittee, true);
   t.is(state.ManagementIsStandby, false);
   t.deepEqual(state.ManagementMyElectionsStatus, {
@@ -394,7 +377,6 @@ test.serial('invalid JSON format ManagementStatus response from management servi
 test.serial('partial ManagementStatus response from management service', async (t) => {
   const state = new State();
   const partialResponse = _.cloneDeep(validManagementStatusResponse);
-  delete partialResponse.Payload.CurrentVirtualChains['1000001'].GenesisRefTime;
   nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(partialResponse));
   await t.throwsAsync(async () => {
     await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
