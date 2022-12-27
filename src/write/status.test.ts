@@ -67,8 +67,7 @@ test.serial('contains all payload fields', (t) => {
     ManagementIsStandby: false,
     TimeEnteredStandbyWithoutVcSync: 0,
     TimeEnteredBadReputation: {},
-    TimeEnteredTopology: -1,
-    IsRegistered: false,
+    TimeEnteredTopology: -1,    
     Config: exampleConfig,
   });
 });
