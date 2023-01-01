@@ -3,7 +3,7 @@ import { sleep, getCurrentClockTime } from './helpers';
 import { Configuration } from './config';
 import { State } from './model/state';
 import { writeStatusToDisk } from './write/status';
-import { readManagementStatus } from './read/management';
+import { readManagementStatus, isGuardianRegistered } from './read/management';
 import { readAllVchainReputations } from './read/vchain-reputations';
 import { readAllVchainMetrics } from './read/vchain-metrics';
 import { calcVchainSyncStatus } from './model/logic-vcsync';
@@ -12,7 +12,7 @@ import {
   shouldNotifyReadyForCommittee,
   shouldNotifyReadyToSync,
   shouldCheckCanJoinCommittee,
-  calcTimeEnteredTopology,
+  calcTimeEnteredTopology  
 } from './model/logic-elections';
 import { getAllGuardiansToVoteUnready } from './model/logic-voteunready';
 import Signer from 'orbs-signer-client';
@@ -22,10 +22,11 @@ import {
   readPendingTransactionStatus,
   sendEthereumElectionsTransaction,
   sendEthereumVoteUnreadyTransaction,
-  queryCanJoinCommittee,
+  queryCanJoinCommittee,  
 } from './write/ethereum';
 
 export async function runLoop(config: Configuration) {
+  // TODO: Yuval- contracts addresses are not updated in case of RegistryChange
   const state = await initializeState(config);
   // initialize status.json to make sure healthcheck passes from now on
   writeStatusToDisk(config.StatusJsonPath, state, config);
@@ -56,6 +57,8 @@ async function runLoopTick(config: Configuration, state: State) {
 
   // STEP 1: read all data (io)
 
+  // is registered on netwok (polygon Ethereum)
+
   // refresh all info from management-service, we don't mind doing this often (2min)
   await readManagementStatus(config.ManagementServiceEndpoint, config.NodeOrbsAddress, state);
 
@@ -76,14 +79,20 @@ async function runLoopTick(config: Configuration, state: State) {
     await readEtherBalance(config.NodeOrbsAddress, state);
   }
 
+  // first time update isRegistered
+  if(state.isRegistered == undefined){
+    state.isRegistered = await isGuardianRegistered(state);
+  }
+
   // query ethereum for Elections.canJoinCommittee (call)
+  // every 10 min default
+  // add update to isRegistered
   let ethereumCanJoinCommittee = false;
   if (
-    getCurrentClockTime() - state.EthereumCanJoinCommitteeLastPollTime >
-      config.EthereumCanJoinCommitteePollTimeSeconds &&
-    shouldCheckCanJoinCommittee(state, config)
-  ) {
-    ethereumCanJoinCommittee = await queryCanJoinCommittee(config.NodeOrbsAddress, state);
+    getCurrentClockTime() - state.EthereumCanJoinCommitteeLastPollTime > config.EthereumCanJoinCommitteePollTimeSeconds &&
+    shouldCheckCanJoinCommittee(state, config)) {
+      ethereumCanJoinCommittee = await queryCanJoinCommittee(config.NodeOrbsAddress, state);
+      state.isRegistered = await isGuardianRegistered(state);
   }
 
   // STEP 2: update all state machine logic (compute)
@@ -110,22 +119,25 @@ async function runLoopTick(config: Configuration, state: State) {
     state.EthereumSyncStatus = newEthereumSyncStatus;
   }
 
-  // STEP 3: write all data (io)
-
-  // send ready-to-sync / ready-for-comittee if needed, we don't mind checking this often (2min)
-  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config)) {
+  // STEP 3: write all data (io) -Yuval: Only if registered in current image's chain network
+  
+  // send ready-to-sync / ready-for-committee if needed, we don't mind checking this often (2min)
+  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config)) {    
     Logger.log(`Decided to send ready-for-committee.`);
     await sendEthereumElectionsTransaction('ready-for-committee', config.NodeOrbsAddress, state, config);
-  } else if (shouldNotifyReadyToSync(state, config)) {
+    
+  } else if (shouldNotifyReadyToSync(state, config)) {    
     Logger.log(`Decided to send ready-to-sync.`);
-    await sendEthereumElectionsTransaction('ready-to-sync', config.NodeOrbsAddress, state, config);
+    await sendEthereumElectionsTransaction('ready-to-sync', config.NodeOrbsAddress, state, config);    
   }
 
-  // send vote unreadys if needed, we don't mind checking this often (2min)
-  const toVoteUnready = getAllGuardiansToVoteUnready(state, config);
-  if (toVoteUnready.length > 0) {
-    Logger.log(`Decided to send vote unreadys against validators: ${toVoteUnready.map((n) => n.EthAddress)}.`);
-    await sendEthereumVoteUnreadyTransaction(toVoteUnready, config.NodeOrbsAddress, state, config);
+  // send vote unready if needed, we don't mind checking this often (2min)
+  if(state.isRegistered){ 
+    const toVoteUnready = getAllGuardiansToVoteUnready(state, config);
+    if (toVoteUnready.length > 0) {
+      Logger.log(`Decided to send vote unreadys against validators: ${toVoteUnready.map((n) => n.EthAddress)}.`);
+      await sendEthereumVoteUnreadyTransaction(toVoteUnready, config.NodeOrbsAddress, state, config);
+    }
   }
 }
 

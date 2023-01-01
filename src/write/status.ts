@@ -44,6 +44,7 @@ export function writeStatusToDisk(filePath: string, state: State, config: Config
       TimeEnteredBadReputation: state.TimeEnteredBadReputation,
       TimeEnteredTopology: state.TimeEnteredTopology,
       Config: config,
+      IsRegistered: state.isRegistered
     },
   };
 

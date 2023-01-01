@@ -4,7 +4,7 @@ import {
   sendEthereumElectionsTransaction,
   sendEthereumVoteUnreadyTransaction,
   readPendingTransactionStatus,
-  queryCanJoinCommittee,
+  queryCanJoinCommittee,  
 } from './ethereum';
 import Web3 from 'web3';
 import { State, EthereumTxStatus } from '../model/state';
@@ -15,6 +15,7 @@ import { exampleConfig } from '../config.example';
 import { TransactionReceipt } from 'web3-core';
 import { getReceiptFeeInEth } from './ethereum-helpers';
 import nock from 'nock';
+
 
 test('initializes web3 and contracts', async (t) => {
   const state = new State();

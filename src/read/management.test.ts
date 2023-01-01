@@ -1,9 +1,10 @@
 import test from 'ava';
 import nock from 'nock';
-import { readManagementStatus } from './management';
+import { readManagementStatus, updateGuardianRegistrationContract, isGuardianRegistered } from './management';
 import { State } from '../model/state';
 import _ from 'lodash';
 import { getCurrentClockTime, jsonStringifyComplexTypes } from '../helpers';
+import Web3 from 'web3';
 
 const myOrbsAddress = '86544bdd6c8b957cd198252c45fa215fc3892126';
 const exampleManagementServiceEndpoint = 'http://management-service:8080';
@@ -79,6 +80,9 @@ const validManagementStatusResponse = {
         Name: 'Guardian4',
       },
     ],
+    CurrentContractAddress:{
+      guardiansRegistration:'ce97f8c79228c53b8b9ad86800a493d1e7e5d1e3'
+    },
     Guardians: {
       '29ce860a2247d97160d6dfc087a15f41e2349087': {
         EthAddress: '29ce860a2247d97160d6dfc087a15f41e2349087',
@@ -399,4 +403,33 @@ test.serial('partial ManagementStatus response from management service', async (
   await t.throwsAsync(async () => {
     await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
   });
+});
+
+test.serial('GuardianRegistration::isRegistered', async (t) => {
+  const state = new State();
+  
+  // spin ganache
+  nock(/ganache/)
+    .post(/.*/, /eth_chainId/)
+    .reply(200, JSON.stringify({"jsonrpc":"2.0","id":1,"result":"0x1"}));
+
+  // init web3 manually 
+  const HTTP_TIMEOUT_SEC = 20;
+  state.web3 = new Web3(
+    new Web3.providers.HttpProvider('http://ganache:7545', {
+      keepAlive: true,
+      timeout: HTTP_TIMEOUT_SEC * 1000,
+    })
+  );
+  t.assert(state.web3);
+
+  state.web3.eth.transactionBlockTimeout = 0; // to stop web3 from polling pending tx
+  state.web3.eth.transactionPollingTimeout = 0; // to stop web3 from polling pending tx
+  state.web3.eth.transactionConfirmationBlocks = 1; // to stop web3 from polling pending tx
+  state.chainId = await state.web3.eth.getChainId();
+  //const blockNum = await state.web3.eth.getBlockNumber();
+  t.log("blockNum", state.chainId);
+
+  t.assert(typeof updateGuardianRegistrationContract);
+  t.assert(typeof isGuardianRegistered)  
 });
