@@ -405,7 +405,7 @@ test.serial('partial ManagementStatus response from management service', async (
   });
 });
 
-test.only('GuardianRegistration::isRegistered', async (t) => {
+test.serial('GuardianRegistration::isRegistered', async (t) => {
   const state = new State();
   
   // spin ganache
@@ -430,44 +430,6 @@ test.only('GuardianRegistration::isRegistered', async (t) => {
   //const blockNum = await state.web3.eth.getBlockNumber();
   t.log("blockNum", state.chainId);
 
-  // const zxStaging = "0xde6dd96680a6a4533d59be091b7793d92aecc7a8";
-  // state.myEthGuardianAddress = zxStaging;
-
   t.assert(typeof updateGuardianRegistrationContract);
-  
-  // const guardianRegistrationAddress = '0xcE97F8C79228C53B8B9Ad86800A493d1e7E5d1E3';
-  // updateGuardianRegistrationContract(state, guardianRegistrationAddress);
-  // //t.log(state)
-
-  // t.assert(state.guardianRegistrationAddress === guardianRegistrationAddress)
-  // t.assert(state.guardianRegistration);
-
-  t.assert(typeof isGuardianRegistered)
-  // t.log(typeof state.guardianRegistration)
-
-  // const isreg = await isGuardianRegistered(state);
-  // t.log(isreg)
-
-
-  // t.log("--------------------------")
-  
+  t.assert(typeof isGuardianRegistered)  
 });
-
-//   await initWeb3Client('http://ganache:7545/', '0xf8B352100dE45D2668768290504DC89e85766E02', state);
-//   t.assert(state.web3);
-//   t.assert(state.ethereumElectionsContract);
-//   // t.assert(state.ethereumElectionsContract);
-
-//   t.assert(state.guardianRegistration);
-//   t.log("guardianRegistrationAddress: " + state.guardianRegistrationAddress);
-//   //t.log("isGuardianRegistered: " + isGuardianRegistered);
-
-//   //const zxStaging = 'de6dd96680a6a4533d59be091b7793d92aecc7a8';
-//   //const isreg = undefined;
-//   // try{    
-//   //   isreg = await isGuardianRegistered(state);
-//   // }catch(e){
-//   //   t.log(e);
-//   //     }
-//   // t.log('isRegistered', isreg);
-// });
