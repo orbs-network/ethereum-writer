@@ -1,28 +1,28 @@
 import * as Logger from './logger';
-import { sleep, getCurrentClockTime } from './helpers';
-import { Configuration } from './config';
-import { State } from './model/state';
-import { writeStatusToDisk } from './write/status';
-import { readManagementStatus } from './read/management';
-import { readAllVchainReputations } from './read/vchain-reputations';
-import { readAllVchainMetrics } from './read/vchain-metrics';
-import { calcVchainSyncStatus } from './model/logic-vcsync';
-import { calcEthereumSyncStatus } from './model/logic-ethsync';
+import {getCurrentClockTime, sleep} from './helpers';
+import {Configuration} from './config';
+import {State} from './model/state';
+import {writeStatusToDisk} from './write/status';
+import {readManagementStatus} from './read/management';
+import {readAllGuardiansReputations} from './read/guardians-reputations';
+import {readAllVchainMetrics} from './read/vchain-metrics';
+import {calcVchainSyncStatus} from './model/logic-vcsync';
+import {calcEthereumSyncStatus} from './model/logic-ethsync';
 import {
+  calcTimeEnteredTopology,
+  shouldCheckCanJoinCommittee,
   shouldNotifyReadyForCommittee,
   shouldNotifyReadyToSync,
-  shouldCheckCanJoinCommittee,
-  calcTimeEnteredTopology,
 } from './model/logic-elections';
-import { getAllGuardiansToVoteUnready } from './model/logic-voteunready';
+import {getAllGuardiansToVoteUnready} from './model/logic-voteunready';
 import Signer from 'orbs-signer-client';
 import {
   initWeb3Client,
+  queryCanJoinCommittee,
   readEtherBalance,
   readPendingTransactionStatus,
   sendEthereumElectionsTransaction,
   sendEthereumVoteUnreadyTransaction,
-  queryCanJoinCommittee,
 } from './write/ethereum';
 
 export async function runLoop(config: Configuration) {
@@ -59,11 +59,8 @@ async function runLoopTick(config: Configuration, state: State) {
   // refresh all info from management-service, we don't mind doing this often (2min)
   await readManagementStatus(config.ManagementServiceEndpoint, config.NodeOrbsAddress, state);
 
-  // refresh all vchain metrics to see if they're live and in sync
-  await readAllVchainMetrics(config.VirtualChainEndpointSchema, state);
-
   // refresh all vchain reputations to prepare for vote unreadys
-  await readAllVchainReputations(config.VirtualChainEndpointSchema, config.OrbsReputationsContract, state);
+  await readAllGuardiansReputations(config, state);
 
   // refresh pending ethereum transactions status for ready-to-sync / ready-for-comittee
   await readPendingTransactionStatus(state.EthereumLastElectionsTx, state, config);
@@ -123,6 +120,7 @@ async function runLoopTick(config: Configuration, state: State) {
 
   // send vote unreadys if needed, we don't mind checking this often (2min)
   const toVoteUnready = getAllGuardiansToVoteUnready(state, config);
+
   if (toVoteUnready.length > 0) {
     Logger.log(`Decided to send vote unreadys against validators: ${toVoteUnready.map((n) => n.EthAddress)}.`);
     await sendEthereumVoteUnreadyTransaction(toVoteUnready, config.NodeOrbsAddress, state, config);

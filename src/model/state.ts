@@ -21,15 +21,15 @@ export class State {
   ManagementOthersElectionsStatus: { [EthAddress: string]: ManagementElectionsStatus | undefined } = {};
   ManagementCurrentCommittee: CommitteeMember[] = [];
   ManagementCurrentStandbys: { EthAddress: string }[] = [];
-  ManagementCurrentTopology: { EthAddress: string }[] = [];
+  ManagementCurrentTopology: { EthAddress: string, Ip: string }[] = [];
 
   // updated by read/vchain-metrics.ts
   VchainMetricsLastPollTime = 0; // UTC seconds
   VchainMetrics: { [VirtualChainId: string]: VchainMetrics } = {};
 
   // updated by read/vchain-reputations.ts
-  VchainReputationsLastPollTime = 0; // UTC seconds
-  VchainReputations: { [VirtualChainId: string]: VchainReputations } = {};
+  ReputationsLastPollTime = 0; // UTC seconds
+  Reputations:  Reputations  = {};
 
   // updated by write/ethereum.ts
   EthereumLastElectionsTx?: EthereumTxStatus;
@@ -51,7 +51,7 @@ export class State {
   TimeEnteredStandbyWithoutVcSync = 0; // UTC seconds
 
   // updated by model/logic-voteout.ts
-  TimeEnteredBadReputation: { [EthAddress: string]: BadReputationSince } = {};
+  TimeEnteredBadReputation: { [EthAddress: string]: number } = {};
 
   // non-serializable objects (lowercase)
 
@@ -73,9 +73,7 @@ export type VchainSyncStatusEnum = 'not-exist' | 'exist-not-in-sync' | 'in-sync'
 
 export type EthereumSyncStatusEnum = 'out-of-sync' | 'operational' | 'tx-pending' | 'need-reset';
 
-export type VchainReputations = { [OrbsAddress: string]: number };
-
-export type BadReputationSince = { [VirtualChainId: string]: number }; // UTC seconds
+export type Reputations = { [OrbsAddress: string]: number };
 
 export type CommitteeMember = { EthAddress: string; Weight: number };
 

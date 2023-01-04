@@ -29,7 +29,7 @@ export class TestEnvironment {
       SignerEndpoint: 'http://signer:7777',
       EthereumElectionsContract: this.ethereumPosDriver.elections.address,
       NodeOrbsAddress: this.nodeOrbsAddress.substr(2).toLowerCase(), // remove "0x",
-      VirtualChainEndpointSchema: 'http://chain-{{ID}}:8080',
+      ManagementServiceEndpointSchema: 'http://{{GUARDIAN_IP}}/services/management-service/status',
       RunLoopPollTimeSeconds: 1,
       EthereumBalancePollTimeSeconds: 1,
       EthereumCanJoinCommitteePollTimeSeconds: 1,

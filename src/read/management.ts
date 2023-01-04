@@ -34,7 +34,7 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
 
 // helpers
 
-async function fetchManagementStatus(url: string): Promise<ManagementStatusResponse> {
+export async function fetchManagementStatus(url: string): Promise<ManagementStatusResponse> {
   const res = await fetch(url);
   const body = await res.text();
   try {
@@ -51,7 +51,7 @@ interface ManagementStatusResponse {
     CurrentRefBlock: number;
     CurrentCommittee: { EthAddress: string; Weight: number }[];
     CurrentCandidates: { EthAddress: string; IsStandby: boolean }[];
-    CurrentTopology: { EthAddress: string }[];
+    CurrentTopology: { EthAddress: string , Ip: string }[];
     Guardians: {
       [EthAddress: string]: {
         OrbsAddress: string;
@@ -94,6 +94,7 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
     CurrentTopology: array(
       object({
         EthAddress: str,
+        Ip: str,
       })
     ),
     Guardians: record(

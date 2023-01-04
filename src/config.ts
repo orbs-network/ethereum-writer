@@ -4,11 +4,13 @@ export interface Configuration {
   SignerEndpoint: string; // does not have default
   EthereumElectionsContract: string; // does not have default
   NodeOrbsAddress: string; // does not have default
-  VirtualChainEndpointSchema: string;
+  ManagementServiceEndpointSchema: string;
   StatusJsonPath: string;
   RunLoopPollTimeSeconds: number;
   EthereumBalancePollTimeSeconds: number; // multiple of RunLoopPollTimeSeconds
   EthereumCanJoinCommitteePollTimeSeconds: number; // multiple of RunLoopPollTimeSeconds
+  InvalidEthereumSyncSeconds: number; // multiple of RunLoopPollTimeSeconds
+  ReputationSampleSize: number; // multiple of RunLoopPollTimeSeconds
   OrbsReputationsContract: string;
   VchainUptimeRequiredSeconds: number;
   VchainSyncThresholdSeconds: number;
@@ -30,7 +32,7 @@ export interface Configuration {
 
 export const defaultConfiguration = {
   StatusJsonPath: './status/status.json',
-  VirtualChainEndpointSchema: 'http://chain-{{ID}}:8080',
+  ManagementServiceEndpointSchema: 'http://{{GUARDIAN_IP}}/services/management-service/status',
   RunLoopPollTimeSeconds: 2 * 60,
   OrbsReputationsContract: '_Committee',
   VchainUptimeRequiredSeconds: 5,
@@ -39,6 +41,8 @@ export const defaultConfiguration = {
   VchainStuckThresholdSeconds: 2 * 60 * 60,
   EthereumBalancePollTimeSeconds: 4 * 60 * 60,
   EthereumCanJoinCommitteePollTimeSeconds: 10 * 60,
+  InvalidEthereumSyncSeconds: 30 * 60,
+  ReputationSampleSize: 100,
   EthereumSyncRequirementSeconds: 20 * 60,
   FailToSyncVcsTimeoutSeconds: 24 * 60 * 60,
   ElectionsRefreshWindowSeconds: 2 * 60 * 60,
@@ -78,8 +82,20 @@ export function validateConfiguration(config: Configuration) {
   if (config.NodeOrbsAddress.length != '11f4d0a3c12e86b4b5f39b213f7e19d048276dae'.length) {
     throw new Error(`NodeOrbsAddress has incorrect length: ${config.NodeOrbsAddress.length}.`);
   }
-  if (!config.VirtualChainEndpointSchema) {
-    throw new Error(`VirtualChainEndpointSchema is empty in config.`);
+  if (!config.ManagementServiceEndpointSchema) {
+    throw new Error(`ManagementServiceEndpointSchema is empty in config.`);
+  }
+  if (!config.InvalidEthereumSyncSeconds) {
+    throw new Error(`InvalidEthereumSyncSeconds is empty in config.`);
+  }
+  if (typeof config.InvalidEthereumSyncSeconds != 'number') {
+    throw new Error(`InvalidEthereumSyncSeconds is not a number.`);
+  }
+  if (!config.ReputationSampleSize) {
+    throw new Error(`ReputationSampleSize is empty in config.`);
+  }
+  if (typeof config.ReputationSampleSize != 'number') {
+    throw new Error(`ReputationSampleSize is not a number.`);
   }
   if (!config.StatusJsonPath) {
     throw new Error(`StatusJsonPath is empty in config.`);
