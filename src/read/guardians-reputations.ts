@@ -1,7 +1,9 @@
 import * as Logger from '../logger';
 import {Reputations, State} from '../model/state';
 import {getCurrentClockTime} from '../helpers';
-import {fetchManagementStatus} from "./management";
+import {fetchManagementStatus, ManagementStatusResponse} from "./management";
+
+const GUARDIAN_FALLBACK_PORT = "18888";
 
 const guardiansSyncResults: { [address: string]: boolean[] } = {};
 
@@ -87,25 +89,60 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
  */
 async function isGuardianInSync(ethAddress: string, state: State, config: ReputationConfigParams): Promise<boolean> {
 
-    const guardian = state.ManagementCurrentTopology.find(guardian => guardian.EthAddress === ethAddress);
+    const response = await fetchMnmgnmtSrvStatusForGuardian(
+        ethAddress,
+        config,
+        state
+    );
 
-    const managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + "");
-
-    try {
-
-        const response = await fetchManagementStatus(
-            managementServiceEndpoint
-        );
-
-        return response.Payload.CurrentRefTime < config.InvalidEthereumSyncSeconds
-
-    } catch (ignore) {
-
-        Logger.log(`Cannot fetch response from guardian ${ethAddress}! bad reputation noted`);
-
-        return false;
-
-    }
+    return response !== null && response.Payload && response.Payload.CurrentRefTime < config.InvalidEthereumSyncSeconds;
 
 }
 
+
+/**
+ * attempt to fetch & parse management service status from guardian
+ *
+ * @param ethAddress
+ * @param config
+ * @param state
+ */
+async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: ReputationConfigParams, state: State): Promise<ManagementStatusResponse | null> {
+
+    let response = null;
+
+    const guardian = state.ManagementCurrentTopology.find(guardian => guardian.EthAddress === ethAddress);
+
+    let managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + "");
+
+    try {
+
+        Logger.log(`Attempting to fetch management service status from guardian [${ethAddress}]`);
+
+        response = await fetchManagementStatus(
+            managementServiceEndpoint
+        );
+
+    } catch (ignore) {
+
+        try {
+
+            Logger.log(`Cannot fetch management service status from guardian [${ethAddress}] on port [80], attempting to fetch over fallback port [${GUARDIAN_FALLBACK_PORT}]`);
+
+            managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + ":" + GUARDIAN_FALLBACK_PORT);
+
+            response = await fetchManagementStatus(
+                managementServiceEndpoint
+            );
+
+        } catch (ignore) {
+
+            Logger.log(`Failed to fetch management service status from guardian [${ethAddress}], reporting bad reputation!`);
+
+        }
+
+    }
+
+    return response;
+
+}

@@ -1,8 +1,7 @@
 import {CommitteeMember, Reputations, State} from './state';
 import {getCurrentClockTime, getToday} from '../helpers';
 import * as Logger from "../logger";
-
-const INVALID_REPUTATION_THRESHOLD = 4;
+import {calcMedianInPlace} from "./helpers";
 
 /**
  * returns a list of all guardians that need to be voted unready
@@ -41,7 +40,9 @@ export interface VoteUnreadyParams {
     InvalidReputationGraceSeconds: number;
     VoteUnreadyValiditySeconds: number;
     EthereumMaxCommittedDailyTx: number;
-    VchainOutOfSyncThresholdSeconds: number;
+    ReputationSampleSize: number;
+    InvalidReputationCheckThreshold: number;
+    InvalidReputationThreshold: number;
 }
 
 /**
@@ -62,7 +63,7 @@ function hasLongBadReputation(ethAddress: string, state: State, config: VoteUnre
     initTimeEnteredBadReputationIfNeeded(ethAddress, state);
 
     // maintain a helper state variable to see how long they're in bad reputation
-    if (isBadReputation(orbsAddress, state.Reputations)) {
+    if (isBadReputation(orbsAddress, state.Reputations, config)) {
 
         if (state.TimeEnteredBadReputation[ethAddress] == 0) state.TimeEnteredBadReputation[ethAddress] = now;
 
@@ -83,16 +84,33 @@ function hasLongBadReputation(ethAddress: string, state: State, config: VoteUnre
  *
  * @param orbsAddress
  * @param reputations
+ * @param config
  */
-function isBadReputation(orbsAddress: string, reputations: Reputations): boolean {
+function isBadReputation(orbsAddress: string, reputations: Reputations, config: VoteUnreadyParams): boolean {
 
     const value = reputations[orbsAddress] ?? -1;
 
     if (value < 0) return false;
 
-    if (value < INVALID_REPUTATION_THRESHOLD) return false;
+    // check if the specific guardian has a high percentage of bad reputation reports
+    if (calcPercentage(value, config) > config.InvalidReputationThreshold) return false;
+
+    // this is a failsafe for when the entire network accidentally is out of sync. check if median bad reputation amount is above threshold
+    if (calcPercentage(calcMedianInPlace(Object.values(reputations)), config) > config.InvalidReputationCheckThreshold) return false;
 
     return true;
+
+}
+
+/**
+ * calculate percentage of bad reputation value of the sample size
+ *
+ * @param badReputationAmount
+ * @param config
+ */
+function calcPercentage(badReputationAmount: number, config: VoteUnreadyParams) {
+
+    return (badReputationAmount / config.ReputationSampleSize) * 100
 
 }
 

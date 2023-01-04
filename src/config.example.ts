@@ -3,6 +3,8 @@ import {Configuration} from './config';
 export const exampleConfig: Configuration = {
   InvalidEthereumSyncSeconds: 30 * 60,
   ReputationSampleSize: 100,
+  InvalidReputationCheckThreshold: 20,
+  InvalidReputationThreshold: 50,
   ManagementServiceEndpoint: 'http://management-service:8080',
   EthereumEndpoint: 'http://ganache:7545',
   SignerEndpoint: 'http://signer:7777',

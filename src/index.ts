@@ -5,7 +5,6 @@ import {State} from './model/state';
 import {writeStatusToDisk} from './write/status';
 import {readManagementStatus} from './read/management';
 import {readAllGuardiansReputations} from './read/guardians-reputations';
-import {readAllVchainMetrics} from './read/vchain-metrics';
 import {calcVchainSyncStatus} from './model/logic-vcsync';
 import {calcEthereumSyncStatus} from './model/logic-ethsync';
 import {

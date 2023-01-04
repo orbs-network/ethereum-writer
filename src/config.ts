@@ -11,6 +11,8 @@ export interface Configuration {
   EthereumCanJoinCommitteePollTimeSeconds: number; // multiple of RunLoopPollTimeSeconds
   InvalidEthereumSyncSeconds: number; // multiple of RunLoopPollTimeSeconds
   ReputationSampleSize: number; // multiple of RunLoopPollTimeSeconds
+  InvalidReputationCheckThreshold: number; // multiple of RunLoopPollTimeSeconds
+  InvalidReputationThreshold: number; // multiple of RunLoopPollTimeSeconds
   OrbsReputationsContract: string;
   VchainUptimeRequiredSeconds: number;
   VchainSyncThresholdSeconds: number;
@@ -43,6 +45,8 @@ export const defaultConfiguration = {
   EthereumCanJoinCommitteePollTimeSeconds: 10 * 60,
   InvalidEthereumSyncSeconds: 30 * 60,
   ReputationSampleSize: 100,
+  InvalidReputationCheckThreshold: 20,
+  InvalidReputationThreshold: 50,
   EthereumSyncRequirementSeconds: 20 * 60,
   FailToSyncVcsTimeoutSeconds: 24 * 60 * 60,
   ElectionsRefreshWindowSeconds: 2 * 60 * 60,
@@ -96,6 +100,18 @@ export function validateConfiguration(config: Configuration) {
   }
   if (typeof config.ReputationSampleSize != 'number') {
     throw new Error(`ReputationSampleSize is not a number.`);
+  }
+  if (!config.InvalidReputationCheckThreshold) {
+    throw new Error(`InvalidReputationCheckThreshold is empty in config.`);
+  }
+  if (typeof config.InvalidReputationCheckThreshold != 'number') {
+    throw new Error(`InvalidReputationCheckThreshold is not a number.`);
+  }
+  if (!config.InvalidReputationThreshold) {
+    throw new Error(`InvalidReputationThreshold is empty in config.`);
+  }
+  if (typeof config.InvalidReputationThreshold != 'number') {
+    throw new Error(`InvalidReputationThreshold is not a number.`);
   }
   if (!config.StatusJsonPath) {
     throw new Error(`StatusJsonPath is empty in config.`);

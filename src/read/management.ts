@@ -45,7 +45,7 @@ export async function fetchManagementStatus(url: string): Promise<ManagementStat
   }
 }
 
-interface ManagementStatusResponse {
+export interface ManagementStatusResponse {
   Payload: {
     CurrentRefTime: number;
     CurrentRefBlock: number;
