@@ -12,7 +12,7 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
 
   state.ManagementRefTime = response.Payload.CurrentRefTime;
   state.ManagementEthRefBlock = response.Payload.CurrentRefBlock;
-  state.ManagementVirtualChains = response.Payload.CurrentVirtualChains;
+
   state.ManagementCurrentCommittee = response.Payload.CurrentCommittee;
   state.ManagementCurrentStandbys = _.filter(response.Payload.CurrentCandidates, (node) => node.IsStandby);
   state.ManagementCurrentTopology = response.Payload.CurrentTopology;
@@ -29,7 +29,7 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
   state.ManagementLastPollTime = getCurrentClockTime();
 
   // log progress
-  Logger.log(`Fetched management service, num vchains: ${Object.keys(state.ManagementVirtualChains).length}.`);
+  Logger.log(`Fetched management service.`);
 }
 
 // helpers
@@ -61,15 +61,6 @@ export interface ManagementStatusResponse {
           ReadyForCommittee: boolean;
           TimeToStale: number;
         };
-      };
-    };
-    CurrentVirtualChains: {
-      [VirtualChainId: string]: {
-        Expiration: number;
-        RolloutGroup: string;
-        IdentityType: number;
-        Tier: string;
-        GenesisRefTime: number;
       };
     };
   };
@@ -108,15 +99,6 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
             TimeToStale: num,
           })
         ),
-      })
-    ),
-    CurrentVirtualChains: record(
-      object({
-        Expiration: num,
-        RolloutGroup: str,
-        IdentityType: num,
-        Tier: str,
-        GenesisRefTime: num,
       })
     ),
   }),

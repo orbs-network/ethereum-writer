@@ -14,7 +14,6 @@ export class State {
   ManagementRefTime = 0; // UTC seconds
   ManagementEthRefBlock = 0;
   ManagementEthToOrbsAddress: { [EthAddress: string]: string } = {};
-  ManagementVirtualChains: { [VirtualChainId: string]: ManagementVirtualChain } = {};
   ManagementInCommittee = false;
   ManagementIsStandby = false;
   ManagementMyElectionsStatus?: ManagementElectionsStatus;

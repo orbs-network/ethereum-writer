@@ -5,7 +5,6 @@ import {State} from './model/state';
 import {writeStatusToDisk} from './write/status';
 import {readManagementStatus} from './read/management';
 import {readAllGuardiansReputations} from './read/guardians-reputations';
-import {calcVchainSyncStatus} from './model/logic-vcsync';
 import {calcEthereumSyncStatus} from './model/logic-ethsync';
 import {
   calcTimeEnteredTopology,
@@ -90,13 +89,6 @@ async function runLoopTick(config: Configuration, state: State) {
     const logMessage = state.TimeEnteredTopology == -1 ? `Exited topology` : `Entered topology`;
     Logger.log(logMessage);
     state.TimeEnteredTopology = newTimeEnteredTopology;
-  }
-
-  // vchain sync status state machine
-  const newVchainSyncStatus = calcVchainSyncStatus(state, config);
-  if (newVchainSyncStatus != state.VchainSyncStatus) {
-    Logger.log(`VchainSyncStatus changing from ${state.VchainSyncStatus} to ${newVchainSyncStatus}.`);
-    state.VchainSyncStatus = newVchainSyncStatus;
   }
 
   // ethereum elections notifications state machine
