@@ -69,6 +69,8 @@ function hasLongBadReputation(ethAddress: string, state: State, config: VoteUnre
 
     } else state.TimeEnteredBadReputation[ethAddress] = 0;
 
+    if (state.TimeEnteredBadReputation[ethAddress] == 0) return false;
+
     if (now - state.TimeEnteredBadReputation[ethAddress] > config.InvalidReputationGraceSeconds) {
 
         Logger.log(`Found orbs address ${orbsAddress} with bad reputation for a long time!`);
@@ -93,7 +95,7 @@ function isBadReputation(orbsAddress: string, reputations: Reputations, config: 
     if (value < 0) return false;
 
     // check if the specific guardian has a high percentage of bad reputation reports
-    if (calcPercentage(value, config) > config.InvalidReputationThreshold) return false;
+    if (calcPercentage(value, config) < config.InvalidReputationThreshold) return false;
 
     // this is a failsafe for when the entire network accidentally is out of sync. check if median bad reputation amount is above threshold
     if (calcPercentage(calcMedianInPlace(Object.values(reputations)), config) > config.InvalidReputationCheckThreshold) return false;

@@ -40,20 +40,20 @@ test('guardian starts having bad reputation in one vc until voted unready', (t) 
     t.assert(state.TimeEnteredBadReputation['e3'] == 0);
 
     state.Reputations['o1'] = 3;
-    state.Reputations['o2'] = 3;
-    state.Reputations['o3'] = 3; // below minimum threshold
+    state.Reputations['o2'] = 10;
+    state.Reputations['o3'] = 20; // below minimum threshold
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] == 0);
 
-    state.Reputations['o1'] = 6;
-    state.Reputations['o2'] = 6; // median causes it to be ignored
-    state.Reputations['o3'] = 6; // bad
+    state.Reputations['o1'] = 40;
+    state.Reputations['o2'] = 40; // median causes it to be ignored
+    state.Reputations['o3'] = 70; // bad
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] == 0);
 
     state.Reputations['o1'] = 1;
     state.Reputations['o2'] = 1; // median is now no longer ignored
-    state.Reputations['o3'] = 6; // bad
+    state.Reputations['o3'] = 80; // bad
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] > 1400000000);
 
@@ -65,7 +65,7 @@ test('guardian starts having bad reputation in one vc until voted unready', (t) 
 
     state.Reputations['o1'] = 1;
     state.Reputations['o2'] = 1;
-    state.Reputations['o3'] = 6; // bad again
+    state.Reputations['o3'] = 70; // bad again
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] > 1400000000);
 
@@ -202,7 +202,7 @@ test('too many successful daily tx', (t) => {
 test('vc that is not in sync/stuck does not cause vote unready', (t) => {
     const state = getExampleState();
     state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 6; // bad
+    state.Reputations['o2'] = 70; // bad
     state.Reputations['o3'] = 1;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e2'] > 1400000000);

@@ -32,7 +32,7 @@ export async function runLoop(config: Configuration) {
   for (;;) {
     try {
       // rest (to make sure we don't retry too aggressively on exceptions)
-      await sleep(config.RunLoopPollTimeSeconds * 1000);
+      await sleep(config.RunLoopPollTimeSeconds * 1);
 
       // main business logic
       await runLoopTick(config, state);

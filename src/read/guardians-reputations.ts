@@ -57,19 +57,23 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
         state.ManagementCurrentCommittee.map(
             guardian => (async () => {
 
-                const _guardianSyncResults = guardiansSyncResults[guardian.EthAddress] = guardiansSyncResults[guardian.EthAddress] || []
+                const ethAddress = guardian.EthAddress;
+
+                const orbsAddress = state.ManagementEthToOrbsAddress[ethAddress];
+
+                const _guardianSyncResults = guardiansSyncResults[ethAddress] = guardiansSyncResults[ethAddress] || []
 
                 _guardianSyncResults.push(await isGuardianInSync(
-                    guardian.EthAddress,
+                    ethAddress,
                     state,
                     config
                 ))
 
-                if (_guardianSyncResults.length >= config.ReputationSampleSize) {
+                if (_guardianSyncResults.length > config.ReputationSampleSize) {
                     _guardianSyncResults.shift() // keep latest sample size
                 }
 
-                guardiansReputation[guardian.EthAddress] = _guardianSyncResults.filter(rep => rep).length;
+                guardiansReputation[orbsAddress] = _guardianSyncResults.filter(rep => !rep).length;
 
             })()
         )
@@ -78,7 +82,6 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
     return guardiansReputation
 
 }
-
 
 /**
  * check if guardian ethereum chain sync is valid
@@ -89,13 +92,15 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
  */
 async function isGuardianInSync(ethAddress: string, state: State, config: ReputationConfigParams): Promise<boolean> {
 
+    const now = getCurrentClockTime();
+
     const response = await fetchMnmgnmtSrvStatusForGuardian(
         ethAddress,
         config,
         state
     );
 
-    return response !== null && response.Payload && response.Payload.CurrentRefTime < config.InvalidEthereumSyncSeconds;
+    return response !== null && response.Payload && (now - response.Payload.CurrentRefTime) < config.InvalidEthereumSyncSeconds;
 
 }
 
@@ -116,8 +121,6 @@ async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: Repu
     let managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + "");
 
     try {
-
-        Logger.log(`Attempting to fetch management service status from guardian [${ethAddress}]`);
 
         response = await fetchManagementStatus(
             managementServiceEndpoint

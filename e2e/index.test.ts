@@ -55,8 +55,8 @@ test.serial('[E2E] launches with one vchain out of sync -> sends ready-to-sync',
       GasPrice: 30000000000,
     },
     EthereumLastVoteUnreadyTime: {},
-    VchainReputationsLastPollTime: isValidTimeRef,
-    VchainReputations: {
+    ReputationsLastPollTime: isValidTimeRef,
+    Reputations: {
       '42': {
         '1111111111111111111111111111111111111111': 2,
         '945dc264e11c09f8a518da6ce1bea493e0055b16': 6,
@@ -135,8 +135,8 @@ test.serial('[E2E] all vchains synced -> sends ready-for-committee', async (t) =
     EthereumCommittedTxStats: {
       [getToday()]: isPositiveNumber,
     },
-    VchainReputationsLastPollTime: isValidTimeRef,
-    VchainReputations: {
+    ReputationsLastPollTime: isValidTimeRef,
+    Reputations: {
       '42': {
         '1111111111111111111111111111111111111111': 2,
         '945dc264e11c09f8a518da6ce1bea493e0055b16': 6,
@@ -234,8 +234,8 @@ test.serial('[E2E] enter committee -> sends vote unready for bad rep', async (t)
     EthereumFeesStats: {
       [getTenDayPeriod()]: isPositiveFloat,
     },
-    VchainReputationsLastPollTime: isValidTimeRef,
-    VchainReputations: {
+    ReputationsLastPollTime: isValidTimeRef,
+    Reputations: {
       '42': {
         '1111111111111111111111111111111111111111': 2,
         '945dc264e11c09f8a518da6ce1bea493e0055b16': 6,

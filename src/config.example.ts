@@ -1,7 +1,7 @@
 import {Configuration} from './config';
 
 export const exampleConfig: Configuration = {
-  InvalidEthereumSyncSeconds: 30 * 60,
+  InvalidEthereumSyncSeconds: 60 * 60,
   ReputationSampleSize: 100,
   InvalidReputationCheckThreshold: 20,
   InvalidReputationThreshold: 50,

@@ -43,7 +43,7 @@ export const defaultConfiguration = {
   VchainStuckThresholdSeconds: 2 * 60 * 60,
   EthereumBalancePollTimeSeconds: 4 * 60 * 60,
   EthereumCanJoinCommitteePollTimeSeconds: 10 * 60,
-  InvalidEthereumSyncSeconds: 30 * 60,
+  InvalidEthereumSyncSeconds: 60 * 60,
   ReputationSampleSize: 100,
   InvalidReputationCheckThreshold: 20,
   InvalidReputationThreshold: 50,
