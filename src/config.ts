@@ -14,10 +14,6 @@ export interface Configuration {
   InvalidReputationCheckThreshold: number; // multiple of RunLoopPollTimeSeconds
   InvalidReputationThreshold: number; // multiple of RunLoopPollTimeSeconds
   OrbsReputationsContract: string;
-  VchainUptimeRequiredSeconds: number;
-  VchainSyncThresholdSeconds: number;
-  VchainOutOfSyncThresholdSeconds: number;
-  VchainStuckThresholdSeconds: number;
   EthereumSyncRequirementSeconds: number;
   FailToSyncVcsTimeoutSeconds: number;
   ElectionsRefreshWindowSeconds: number;
@@ -37,10 +33,6 @@ export const defaultConfiguration = {
   ManagementServiceEndpointSchema: 'http://{{GUARDIAN_IP}}/services/management-service/status',
   RunLoopPollTimeSeconds: 2 * 60,
   OrbsReputationsContract: '_Committee',
-  VchainUptimeRequiredSeconds: 5,
-  VchainSyncThresholdSeconds: 5 * 60,
-  VchainOutOfSyncThresholdSeconds: 60 * 60,
-  VchainStuckThresholdSeconds: 2 * 60 * 60,
   EthereumBalancePollTimeSeconds: 4 * 60 * 60,
   EthereumCanJoinCommitteePollTimeSeconds: 10 * 60,
   InvalidEthereumSyncSeconds: 60 * 60,
@@ -136,30 +128,6 @@ export function validateConfiguration(config: Configuration) {
   }
   if (!config.OrbsReputationsContract) {
     throw new Error(`OrbsReputationsContract is empty in config.`);
-  }
-  if (!config.VchainUptimeRequiredSeconds) {
-    throw new Error(`VchainUptimeRequiredSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainUptimeRequiredSeconds != 'number') {
-    throw new Error(`VchainUptimeRequiredSeconds is not a number.`);
-  }
-  if (!config.VchainSyncThresholdSeconds) {
-    throw new Error(`VchainSyncThresholdSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainSyncThresholdSeconds != 'number') {
-    throw new Error(`VchainSyncThresholdSeconds is not a number.`);
-  }
-  if (!config.VchainOutOfSyncThresholdSeconds) {
-    throw new Error(`VchainOutOfSyncThresholdSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainOutOfSyncThresholdSeconds != 'number') {
-    throw new Error(`VchainOutOfSyncThresholdSeconds is not a number.`);
-  }
-  if (!config.VchainStuckThresholdSeconds) {
-    throw new Error(`VchainStuckThresholdSeconds is empty or zero.`);
-  }
-  if (typeof config.VchainStuckThresholdSeconds != 'number') {
-    throw new Error(`VchainStuckThresholdSeconds is not a number.`);
   }
   if (!config.EthereumSyncRequirementSeconds) {
     throw new Error(`EthereumSyncRequirementSeconds is empty or zero.`);

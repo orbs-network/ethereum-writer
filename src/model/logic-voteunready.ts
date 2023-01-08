@@ -13,7 +13,6 @@ export function getAllGuardiansToVoteUnready(state: State, config: VoteUnreadyPa
 
     if (state.EthereumCommittedTxStats[getToday()] >= config.EthereumMaxCommittedDailyTx) return [];
     if (state.EthereumSyncStatus != 'operational') return [];
-    if (state.VchainSyncStatus != 'in-sync') return [];
     if (!state.ManagementInCommittee) return [];
     return state.ManagementCurrentCommittee.filter((guardian) => shouldBeVotedUnready(guardian, state, config));
 

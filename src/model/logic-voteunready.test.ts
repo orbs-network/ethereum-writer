@@ -8,7 +8,6 @@ import {getCurrentClockTime, getToday} from '../helpers';
 function getExampleState() {
     const exampleState = new State();
     exampleState.EthereumSyncStatus = 'operational';
-    exampleState.VchainSyncStatus = 'in-sync';
     exampleState.ManagementRefTime = getCurrentClockTime() - 10;
     exampleState.ManagementInCommittee = true;
     exampleState.ManagementCurrentCommittee = [
@@ -172,13 +171,10 @@ test('only sending vote unreadys if good eth sync, good vchain sync and sender i
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 
     state.EthereumSyncStatus = 'operational';
-    state.VchainSyncStatus = 'not-exist';
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 
-    state.VchainSyncStatus = 'exist-not-in-sync';
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 
-    state.VchainSyncStatus = 'in-sync';
     state.ManagementInCommittee = false;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 

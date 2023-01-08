@@ -43,11 +43,7 @@ export class State {
 
   // updated by index.ts
   TimeEnteredTopology = -1; // UTC seconds
-  VchainSyncStatus: VchainSyncStatusEnum = 'not-exist';
   EthereumSyncStatus: EthereumSyncStatusEnum = 'out-of-sync';
-
-  // updated by model/logic-ethsync.ts
-  TimeEnteredStandbyWithoutVcSync = 0; // UTC seconds
 
   // updated by model/logic-voteout.ts
   TimeEnteredBadReputation: { [EthAddress: string]: number } = {};
@@ -67,8 +63,6 @@ export class State {
 }
 
 // helpers
-
-export type VchainSyncStatusEnum = 'not-exist' | 'exist-not-in-sync' | 'in-sync';
 
 export type EthereumSyncStatusEnum = 'out-of-sync' | 'operational' | 'tx-pending' | 'need-reset';
 

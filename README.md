@@ -29,10 +29,6 @@ The service is packaged as a Docker image. It is routinely published from this r
 | `EthereumBalancePollTimeSeconds` | How often in seconds should Ether balance be queried, must be a a multiple of `RunLoopPollTimeSeconds`.<br>Default: `14400` (4 hours) |
 | `EthereumCanJoinCommitteePollTimeSeconds` | How often in seconds should the service query the Ethereum Elections contract to check whether a node that isn't in the committee can successfully join it.<br>Default: `600` (10 minutes) |
 | `OrbsReputationsContract` | The name of the Orbs smart contract running on a virtual chain that returns reputation scores for all peers.<br>Default: `_Committee` |
-| `VchainUptimeRequiredSeconds` | The minimum time in seconds a virtual chain container should be up before it's considered existing in `VchainSyncStatus` (leave `not-exist`).<br>Default: `5` (seconds) |
-| `VchainSyncThresholdSeconds` | How near in seconds should the latest blocks be in virtual chains for the chain to be considered synchronized, `ORBS_SYNC_TIME_THRESHOLD` in the [spec](https://github.com/orbs-network/orbs-spec/blob/master/node-architecture/ETH-WRITER.md).<br>Default: `300` (5 minutes) |
-| `VchainOutOfSyncThresholdSeconds` | How far should a synchronized virtual chain's latest blocks reach for it to become unsynchronized, `ORBS_OUT_OF_SYNC_THRESHOLD` in the spec.<br>Default: `3600` (1 hour) |
-| `VchainStuckThresholdSeconds` | How far should last synched block be for the virtual chain to be considered stuck , `ORBS_STUCK_THRESHOLD` in the spec.<br>Default: `3600` (1 hour) |
 | `EthereumSyncRequirementSeconds` | How near Ethereum Management ref time should be for Ethereum to be considered synchronized, `ETHEREUM_PROGRESS_REQ` in the spec.<br>Default: `1200` (20 minutes) |
 | `FailToSyncVcsTimeoutSeconds` | If virtual chains could not be properly synchronized within this time frame, the node will require reset, `FAIL_TO_SYNC_TIMEOUT` in the spec.<br>Default: `86400` (24 hours) |
 | `ElectionsRefreshWindowSeconds` | Committee update stale window, `REFRESH_WINDOW` in the spec.<br>Default: `7200` (2 hours) |
