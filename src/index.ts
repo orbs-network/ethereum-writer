@@ -80,8 +80,8 @@ async function runLoopTick(config: Configuration, state: State) {
   }
 
   // first time update isRegistered
-  if(state.isRegistered == undefined){
-    state.isRegistered = await isGuardianRegistered(state);
+  if(state.isRegistered == undefined) {
+    state.isRegistered = state.myEthGuardianAddress ? await isGuardianRegistered(state): false; // if myEthGuardianAddress is empty it means the node is not registered (not present in matic reader)
   }
 
   // query ethereum for Elections.canJoinCommittee (call)
