@@ -75,7 +75,7 @@ async function runLoopTick(config: Configuration, state: State) {
   }
 
   // first time update isRegistered
-  if(state.isRegistered == undefined){
+  if(state.isRegistered == undefined) {
     state.isRegistered = await isGuardianRegistered(state);
   }
 

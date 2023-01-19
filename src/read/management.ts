@@ -141,6 +141,7 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
   }),
 });
 
-export async function isGuardianRegistered(state: State): Promise<boolean> {  
+export async function isGuardianRegistered(state: State): Promise<boolean> {
+  if (!state.myEthGuardianAddress) return false; // if myEthGuardianAddress is empty it means the node is not registered (not present in matic reader)
   return await state.guardianRegistration?.methods.isRegistered(state.myEthGuardianAddress).call();  
 }
