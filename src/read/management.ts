@@ -5,7 +5,33 @@ import fetch from 'node-fetch';
 import { Decoder, decodeString, num, object, record, bool, str, array, maybe } from 'ts-json-decode';
 import { getCurrentClockTime } from '../helpers';
 import { findEthFromOrbsAddress } from '../model/helpers';
+import { getAbiByContractRegistryKey } from '@orbs-network/orbs-ethereum-contracts-v2';
 
+// update guardianRegistration contract instance and address
+export function updateGuardianRegistrationContract(state: State, address:string){
+  Logger.log(`updateGuardianRegistrationContract: ${address} `);
+
+  if(!address) {
+    Logger.error('guardianRegistrationAddress is not valid')
+    return 
+  }
+  // addigment
+  state.guardianRegistrationAddress = address;
+  
+  const regAbi = getAbiByContractRegistryKey('guardiansRegistration');
+  if(!regAbi) {
+    Logger.error(`failed to create regApi`);
+    return;
+  }
+  if(!state.web3){
+    Logger.error(`web3 is not initialized`);
+    return;
+  }
+  
+  state.guardianRegistration = new state.web3.eth.Contract(regAbi, state.guardianRegistrationAddress);
+  if(!state.guardianRegistration) 
+    Logger.error(`failed to create state.guardianRegistration web3 instance`);
+}
 export async function readManagementStatus(endpoint: string, myOrbsAddress: string, state: State) {
   const url = `${endpoint}/status`;
   const response = await fetchManagementStatus(url);
@@ -18,12 +44,18 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
   state.ManagementCurrentTopology = response.Payload.CurrentTopology;
   state.ManagementEthToOrbsAddress = _.mapValues(response.Payload.Guardians, (node) => node.OrbsAddress);
 
-  const myEthAddress = findEthFromOrbsAddress(myOrbsAddress, state);
-  state.ManagementInCommittee = response.Payload.CurrentCommittee.some((node) => node.EthAddress == myEthAddress);
-  state.ManagementIsStandby = state.ManagementCurrentStandbys.some((node) => node.EthAddress == myEthAddress);
-  state.ManagementMyElectionsStatus = response.Payload.Guardians[myEthAddress]?.ElectionsStatus;
+  if(state.guardianRegistrationAddress !== response.Payload.CurrentContractAddress.guardiansRegistration){    
+    updateGuardianRegistrationContract(state, response.Payload.CurrentContractAddress.guardiansRegistration);
+  }
+  
+  if(!state.myEthGuardianAddress)
+    state.myEthGuardianAddress = findEthFromOrbsAddress(myOrbsAddress, state);
+
+  state.ManagementInCommittee = response.Payload.CurrentCommittee.some((node) => node.EthAddress == state.myEthGuardianAddress);
+  state.ManagementIsStandby = state.ManagementCurrentStandbys.some((node) => node.EthAddress == state.myEthGuardianAddress);
+  state.ManagementMyElectionsStatus = response.Payload.Guardians[state.myEthGuardianAddress]?.ElectionsStatus;
   state.ManagementOthersElectionsStatus = _.mapValues(response.Payload.Guardians, (node) => node.ElectionsStatus);
-  delete state.ManagementOthersElectionsStatus[myEthAddress];
+  delete state.ManagementOthersElectionsStatus[state.myEthGuardianAddress];
 
   // last to be after all possible exceptions and processing delays
   state.ManagementLastPollTime = getCurrentClockTime();
@@ -52,6 +84,7 @@ export interface ManagementStatusResponse {
     CurrentCommittee: { EthAddress: string; Weight: number }[];
     CurrentCandidates: { EthAddress: string; IsStandby: boolean }[];
     CurrentTopology: { EthAddress: string , Ip: string }[];
+    CurrentContractAddress:{guardiansRegistration:string};
     Guardians: {
       [EthAddress: string]: {
         OrbsAddress: string;
@@ -88,6 +121,10 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
         Ip: str,
       })
     ),
+    CurrentContractAddress: object({
+      guardiansRegistration: str,
+    }),
+    
     Guardians: record(
       object({
         OrbsAddress: str,
@@ -103,3 +140,7 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
     ),
   }),
 });
+
+export async function isGuardianRegistered(state: State): Promise<boolean> {  
+  return await state.guardianRegistration?.methods.isRegistered(state.myEthGuardianAddress).call();  
+}

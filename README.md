@@ -23,7 +23,7 @@ The service is packaged as a Docker image. It is routinely published from this r
 | `SignerEndpoint` | HTTP URL endpoint of an instance of [signer service](https://github.com/orbs-network/signer-service), for example `http://signer:7777`. |
 | `EthereumElectionsContract` | Ethereum address of Orbs V2 [Elections](https://github.com/orbs-network/orbs-ethereum-contracts-v2/blob/master/contracts/spec_interfaces/IElections.sol) contract, for example `0x02Ca9F2c5dD0635516241efD480091870277865b`. |
 | `NodeOrbsAddress` | The Orbs address of the node, configured during [initialization](https://github.com/orbs-network/validator-instructions) with Polygon, for example `8cd2a24f0c3f50bce2f12c846277491433b47ae0`. |
-| `ManagementServiceEndpointSchema` | Local schema of the Public API HTTP endpoint of a virtual chain where `{ID}` is a replacable parameter of the virtual chain ID.<br>Default: 'http://{{GUARDIAN_IP}}/services/management-service/status' |
+| `ManagementServiceEndpointSchema` | Local schema of the Public API HTTP endpoint of the management service where `{GUARDIAN_IP}` is a replacable parameter of the IP address of any guardian of the network.<br>Default: 'http://{{GUARDIAN_IP}}/services/management-service/status' |
 | `StatusJsonPath` | The local path on disk where status JSON should be written by the service.<br>Default: `./status/status.json` |
 | `RunLoopPollTimeSeconds` | The interval in seconds of how often the runloop of the service wakes up to execute its routine of reading data, update state and write side effects.<br>Default: `120` (2 minutes) |
 | `EthereumBalancePollTimeSeconds` | How often in seconds should Ether balance be queried, must be a a multiple of `RunLoopPollTimeSeconds`.<br>Default: `14400` (4 hours) |
@@ -113,6 +113,6 @@ The service is packaged as a Docker image. It is routinely published from this r
 
 ### Matic-writer - Polygon
 
-The code has been updated to add EVM write capabalities for Polygon network, as well as Ethereum in order to support polygon proof of stake functionality as of March 29 2022.
+The code has been updated to add EVM write capabilities for Polygon network, as well as Ethereum in order to support polygon proof of stake functionality as of March 29 2022.
 
-the netwrok runs another docker image of this repo under the name __matic-writer__ to support writing to POS contracts on polygon netwrok.
+the network runs another docker image of this repo under the name __matic-writer__ to support writing to POS contracts on polygon network.

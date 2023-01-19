@@ -19,6 +19,7 @@ function getExampleState() {
     { EthAddress: 's4' },
     { EthAddress: 's5' },
   ];
+  exampleState.isRegistered = true;
   exampleState.ManagementOthersElectionsStatus = {
     s1: {
       LastUpdateTime: getCurrentClockTime(),

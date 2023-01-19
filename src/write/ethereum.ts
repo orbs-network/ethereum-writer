@@ -12,7 +12,7 @@ import * as Logger from '../logger';
 import { getCurrentClockTime, getToday, getTenDayPeriod } from '../helpers';
 import { State, EthereumTxStatus, CommitteeMember } from '../model/state';
 import {
-  ContractRegistryKey,
+  ContractRegistryKey,  
   getAbiByContractAddress,
   getAbiByContractRegistryKey,
 } from '@orbs-network/orbs-ethereum-contracts-v2';
@@ -30,10 +30,11 @@ export async function initWeb3Client(ethereumEndpoint: string, electionsContract
   state.web3.eth.transactionBlockTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionPollingTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionConfirmationBlocks = 1; // to stop web3 from polling pending tx
+  state.chainId = await state.web3.eth.getChainId()
+  
   // init contracts
   const electionsAbi = getAbiForContract(electionsContractAddress, 'elections');
-  state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);
-  state.chainId = await state.web3.eth.getChainId()
+  state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);  
 }
 
 function getAbiForContract(address: string, contractName: ContractRegistryKey) {

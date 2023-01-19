@@ -65,7 +65,7 @@ test.serial('contains all payload fields', (t) => {
     ManagementInCommittee: false,
     ManagementIsStandby: false,
     TimeEnteredBadReputation: {},
-    TimeEnteredTopology: -1,
+    TimeEnteredTopology: -1,    
     Config: exampleConfig,
   });
 });
