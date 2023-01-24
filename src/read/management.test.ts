@@ -382,6 +382,7 @@ test.serial('invalid JSON format ManagementStatus response from management servi
 test.serial('partial ManagementStatus response from management service', async (t) => {
   const state = new State();
   const partialResponse = _.cloneDeep(validManagementStatusResponse);
+  delete partialResponse.Payload.CurrentRefTime;
   nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(partialResponse));
   await t.throwsAsync(async () => {
     await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
