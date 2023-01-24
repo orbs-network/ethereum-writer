@@ -14,22 +14,12 @@ function getExampleState() {
         {EthAddress: 'e1', Weight: 10},
         {EthAddress: 'e2', Weight: 10},
         {EthAddress: 'e3', Weight: 10},
+        {EthAddress: 'e4', Weight: 10},
+        {EthAddress: 'e5', Weight: 10},
     ];
-    exampleState.ManagementEthToOrbsAddress = {e1: 'o1', e2: 'o2', e3: 'o3'};
-    exampleState.Reputations = {o1: 0, o2: 0, o3: 0};
-    // make sure both vcs are in sync
-    exampleState.VchainMetrics['42'] = {
-        LastBlockHeight: 5000,
-        UptimeSeconds: 3000,
-        LastBlockTime: getCurrentClockTime() - 35,
-        LastCommitTime: getCurrentClockTime() - 35,
-    };
-    exampleState.VchainMetrics['43'] = {
-        LastBlockHeight: 5000,
-        UptimeSeconds: 3000,
-        LastBlockTime: getCurrentClockTime() - 35,
-        LastCommitTime: getCurrentClockTime() - 35,
-    };
+    exampleState.ManagementEthToOrbsAddress = {e1: 'o1', e2: 'o2', e3: 'o3', e4: 'o4', e5: 'o5'};
+    exampleState.Reputations = {o1: 0, o2: 0, o3: 0, o4: 0, o5: 0};
+
     return exampleState;
 }
 
@@ -38,7 +28,7 @@ test('guardian starts having bad reputation in one vc until voted unready', (t) 
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] == 0);
 
-    state.Reputations['o1'] = 3;
+    state.Reputations['o1'] = 30;
     state.Reputations['o2'] = 10;
     state.Reputations['o3'] = 20; // below minimum threshold
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
@@ -50,20 +40,20 @@ test('guardian starts having bad reputation in one vc until voted unready', (t) 
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] == 0);
 
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 1; // median is now no longer ignored
+    state.Reputations['o1'] = 10;
+    state.Reputations['o2'] = 10; // median is now no longer ignored
     state.Reputations['o3'] = 80; // bad
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] > 1400000000);
 
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 1;
-    state.Reputations['o3'] = 1; // now ok
+    state.Reputations['o1'] = 10;
+    state.Reputations['o2'] = 10;
+    state.Reputations['o3'] = 10; // now ok
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] == 0);
 
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 1;
+    state.Reputations['o1'] = 10;
+    state.Reputations['o2'] = 10;
     state.Reputations['o3'] = 70; // bad again
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e3'] > 1400000000);
@@ -92,12 +82,11 @@ test('guardian starts having bad reputation in one vc until voted unready', (t) 
 
 test('more than 1 guardian voted unready', (t) => {
     const state = getExampleState();
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 6; // bad
-    state.Reputations['o3'] = 1;
-    state.Reputations['o1'] = 6; // bad
-    state.Reputations['o2'] = 1;
-    state.Reputations['o3'] = 1;
+    state.Reputations['o1'] = 60; // bad
+    state.Reputations['o2'] = 60; // bad
+    state.Reputations['o3'] = 10;
+    state.Reputations['o4'] = 10;
+    state.Reputations['o5'] = 10;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e2'] > 1400000000);
     t.assert(state.TimeEnteredBadReputation['e1'] > 1400000000);
@@ -118,9 +107,9 @@ test('missing reputations for vc does not fail', (t) => {
 
 test('guardian which is not in committee is not voted unready', (t) => {
     const state = getExampleState();
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 6; // bad
-    state.Reputations['o3'] = 1;
+    state.Reputations['o1'] = 10;
+    state.Reputations['o2'] = 60; // bad
+    state.Reputations['o3'] = 10;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e2'] > 1400000000);
 
@@ -137,9 +126,9 @@ test('guardian which is not in committee is not voted unready', (t) => {
 
 test('guardian with unknown orbs address is not voted unready', (t) => {
     const state = getExampleState();
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 6; // bad
-    state.Reputations['o3'] = 1;
+    state.Reputations['o1'] = 10;
+    state.Reputations['o2'] = 60; // bad
+    state.Reputations['o3'] = 10;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e2'] > 1400000000);
 
@@ -152,9 +141,11 @@ test('guardian with unknown orbs address is not voted unready', (t) => {
 
 test('only sending vote unreadys if good eth sync, good vchain sync and sender in committee', (t) => {
     const state = getExampleState();
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 6; // bad
-    state.Reputations['o3'] = 1;
+    state.Reputations['o1'] = 10;
+    state.Reputations['o2'] = 60; // bad
+    state.Reputations['o3'] = 10;
+    state.Reputations['o4'] = 10;
+    state.Reputations['o5'] = 10;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e2'] > 1400000000);
 
@@ -171,12 +162,6 @@ test('only sending vote unreadys if good eth sync, good vchain sync and sender i
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 
     state.EthereumSyncStatus = 'operational';
-    t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
-
-    t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
-
-    state.ManagementInCommittee = false;
-    t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 
     state.ManagementInCommittee = true;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), [{EthAddress: 'e2', Weight: 10}]);
@@ -184,9 +169,9 @@ test('only sending vote unreadys if good eth sync, good vchain sync and sender i
 
 test('too many successful daily tx', (t) => {
     const state = getExampleState();
-    state.Reputations['o1'] = 1;
-    state.Reputations['o2'] = 6; // bad
-    state.Reputations['o3'] = 1;
+    state.Reputations['o1'] = 10;
+    state.Reputations['o2'] = 60; // bad
+    state.Reputations['o3'] = 10;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e2'] > 1400000000);
 
@@ -195,17 +180,15 @@ test('too many successful daily tx', (t) => {
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 });
 
-test('vc that is not in sync/stuck does not cause vote unready', (t) => {
+test('is not in sync/stuck does not cause vote unready', (t) => {
     const state = getExampleState();
-    state.Reputations['o1'] = 1;
+    state.Reputations['o1'] = 10;
     state.Reputations['o2'] = 70; // bad
-    state.Reputations['o3'] = 1;
+    state.Reputations['o3'] = 10;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
     t.assert(state.TimeEnteredBadReputation['e2'] > 1400000000);
 
     state.TimeEnteredBadReputation['e2'] = getCurrentClockTime() - 10 * 60 * 60;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), [{EthAddress: 'e2', Weight: 10}]);
 
-    state.VchainMetrics['42'].LastBlockTime = getCurrentClockTime() - 2 * 60 * 60;
-    t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), []);
 });

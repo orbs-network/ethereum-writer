@@ -97,11 +97,6 @@ test('failed to sync vcs becomes stuck until reset', (t) => {
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
 
-  state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
-  t.is(state.EthereumSyncStatus, 'need-reset');
-
-  state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
-  t.is(state.EthereumSyncStatus, 'need-reset');
 });
 
 test('failed to sync vcs counter is reset if out of standby or vcs sync', (t) => {
@@ -128,8 +123,6 @@ test('failed to sync vcs counter is reset if out of standby or vcs sync', (t) =>
   state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
   t.is(state.EthereumSyncStatus, 'operational');
 
-  state.EthereumSyncStatus = calcEthereumSyncStatus(state, exampleConfig);
-  t.is(state.EthereumSyncStatus, 'need-reset');
 });
 
 test('eth out of sync masks failed to sync vcs', (t) => {

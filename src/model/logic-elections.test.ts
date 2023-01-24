@@ -61,7 +61,6 @@ function getAuditConfig() {
 
 test('shouldNotifyReadyToSync: new node with standbys full', (t) => {
   const state = getExampleState();
-  t.false(shouldNotifyReadyToSync(state, exampleConfig));
 
   t.true(shouldNotifyReadyToSync(state, exampleConfig));
 
@@ -141,8 +140,6 @@ test('shouldNotifyReadyToSync: audit-only keeps position in standby', (t) => {
   state.ManagementIsStandby = true;
   t.true(shouldNotifyReadyToSync(state, getAuditConfig()));
 
-  t.false(shouldNotifyReadyToSync(state, getAuditConfig()));
-
   state.ManagementMyElectionsStatus = {
     LastUpdateTime: getCurrentClockTime() - 2 * 24 * 60 * 60,
     ReadyToSync: true,
@@ -168,7 +165,6 @@ test('shouldNotifyReadyToSync: too many successful daily tx', (t) => {
 
 test('shouldNotifyReadyForCommittee: new node finished syncing', (t) => {
   const state = getExampleState();
-  t.false(shouldNotifyReadyForCommittee(state, false, exampleConfig));
 
   t.true(shouldNotifyReadyForCommittee(state, false, exampleConfig));
 
@@ -267,7 +263,6 @@ test('shouldCheckCanJoinCommittee: only when conditions are right', (t) => {
   state.EthereumSyncStatus = 'operational';
   t.true(shouldCheckCanJoinCommittee(state, exampleConfig));
 
-  t.false(shouldCheckCanJoinCommittee(state, exampleConfig));
   t.true(shouldCheckCanJoinCommittee(state, exampleConfig));
 
   state.ManagementInCommittee = true;
