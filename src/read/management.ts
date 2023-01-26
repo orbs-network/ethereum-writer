@@ -1,11 +1,12 @@
 import _ from 'lodash';
 import * as Logger from '../logger';
-import { State } from '../model/state';
+import {State} from '../model/state';
 import fetch from 'node-fetch';
-import { Decoder, decodeString, num, object, record, bool, str, array, maybe } from 'ts-json-decode';
-import { getCurrentClockTime } from '../helpers';
-import { findEthFromOrbsAddress } from '../model/helpers';
-import { getAbiByContractRegistryKey } from '@orbs-network/orbs-ethereum-contracts-v2';
+import {array, bool, Decoder, decodeString, maybe, num, object, record, str} from 'ts-json-decode';
+import {getCurrentClockTime} from '../helpers';
+import {findEthFromOrbsAddress} from '../model/helpers';
+import {getAbiByContractRegistryKey} from '@orbs-network/orbs-ethereum-contracts-v2';
+import AbortController from "abort-controller";
 
 // update guardianRegistration contract instance and address
 export function updateGuardianRegistrationContract(state: State, address:string){
@@ -13,11 +14,11 @@ export function updateGuardianRegistrationContract(state: State, address:string)
 
   if(!address) {
     Logger.error('guardianRegistrationAddress is not valid')
-    return 
+    return
   }
   // addigment
   state.guardianRegistrationAddress = address;
-  
+
   const regAbi = getAbiByContractRegistryKey('guardiansRegistration');
   if(!regAbi) {
     Logger.error(`failed to create regApi`);
@@ -27,9 +28,9 @@ export function updateGuardianRegistrationContract(state: State, address:string)
     Logger.error(`web3 is not initialized`);
     return;
   }
-  
+
   state.guardianRegistration = new state.web3.eth.Contract(regAbi, state.guardianRegistrationAddress);
-  if(!state.guardianRegistration) 
+  if(!state.guardianRegistration)
     Logger.error(`failed to create state.guardianRegistration web3 instance`);
 }
 export async function readManagementStatus(endpoint: string, myOrbsAddress: string, state: State) {
@@ -44,10 +45,10 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
   state.ManagementCurrentTopology = response.Payload.CurrentTopology;
   state.ManagementEthToOrbsAddress = _.mapValues(response.Payload.Guardians, (node) => node.OrbsAddress);
 
-  if(state.guardianRegistrationAddress !== response.Payload.CurrentContractAddress.guardiansRegistration){    
+  if(state.guardianRegistrationAddress !== response.Payload.CurrentContractAddress.guardiansRegistration){
     updateGuardianRegistrationContract(state, response.Payload.CurrentContractAddress.guardiansRegistration);
   }
-  
+
   if(!state.myEthGuardianAddress)
     state.myEthGuardianAddress = findEthFromOrbsAddress(myOrbsAddress, state);
 
@@ -75,6 +76,51 @@ export async function fetchManagementStatus(url: string): Promise<ManagementStat
     Logger.error(err.message);
     throw new Error(`Invalid ManagementStatus response (HTTP-${res.status}):\n${body}`);
   }
+}
+
+/**
+ * fetch management status with a timeout (used to fetch from other nodes with ability to prevent system halt)
+ *
+ * @param url
+ * @param timeout
+ */
+export async function fetchManagementStatusWithTimeout(url: string, timeout = 5000) {
+
+  let res = null;
+  let body = null;
+
+  const controller = new AbortController();
+
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+
+
+    Logger.log(`** fetching management service status from ${url}`)
+
+     res = await fetch(url, {
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    Logger.log(`** DONE fetching management service status from ${url}`)
+
+     body = await res.text();
+
+    return decodeString(managementStatusResponseDecoder, body);
+
+  } catch (err) {
+
+    Logger.error(err.message);
+    throw new Error(`Error fetching Management status from ${url}, response: ${res}, body: ${body}`);
+
+  } finally {
+
+    clearTimeout(timeoutId);
+
+  }
+
 }
 
 export interface ManagementStatusResponse {
@@ -124,7 +170,7 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
     CurrentContractAddress: object({
       guardiansRegistration: str,
     }),
-    
+
     Guardians: record(
       object({
         OrbsAddress: str,
@@ -143,5 +189,5 @@ const managementStatusResponseDecoder: Decoder<ManagementStatusResponse> = objec
 
 export async function isGuardianRegistered(state: State): Promise<boolean> {
   if (!state.myEthGuardianAddress) return false; // if myEthGuardianAddress is empty it means the node is not registered (not present in matic reader)
-  return await state.guardianRegistration?.methods.isRegistered(state.myEthGuardianAddress).call();  
+  return await state.guardianRegistration?.methods.isRegistered(state.myEthGuardianAddress).call();
 }

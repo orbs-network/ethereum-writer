@@ -1,7 +1,7 @@
 import * as Logger from '../logger';
 import {Reputations, State} from '../model/state';
 import {getCurrentClockTime} from '../helpers';
-import {fetchManagementStatus, ManagementStatusResponse} from "./management";
+import {fetchManagementStatusWithTimeout, ManagementStatusResponse} from "./management";
 
 const GUARDIAN_FALLBACK_PORT = "18888";
 
@@ -122,7 +122,7 @@ async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: Repu
 
     try {
 
-        response = await fetchManagementStatus(
+        response = await fetchManagementStatusWithTimeout(
             managementServiceEndpoint
         );
 
@@ -134,7 +134,7 @@ async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: Repu
 
             managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + ":" + GUARDIAN_FALLBACK_PORT);
 
-            response = await fetchManagementStatus(
+            response = await fetchManagementStatusWithTimeout(
                 managementServiceEndpoint
             );
 
