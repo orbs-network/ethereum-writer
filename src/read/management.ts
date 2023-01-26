@@ -67,7 +67,9 @@ export async function readManagementStatus(endpoint: string, myOrbsAddress: stri
 // helpers
 
 export async function fetchManagementStatus(url: string): Promise<ManagementStatusResponse> {
+  Logger.log(`** fetchManagementStatus ${url} `)
   const res = await fetch(url);
+  Logger.log(`** FINISHED fetchManagementStatus ${url} `)
   const body = await res.text();
   try {
     return decodeString(managementStatusResponseDecoder, body);
