@@ -1,17 +1,21 @@
 import * as Logger from './logger';
 import { runLoop } from '.';
 import { parseArgs } from './cli-args';
+import process from "process";
 
 process.on('uncaughtException', function (err) {
   Logger.log('Uncaught exception on process, shutting down:');
   Logger.error(err.stack);
   process.exit(1);
 });
-
-process.on('SIGINT', function () {
-  Logger.log('Received SIGINT, shutting down.');
-  process.exit();
+process.on('unhandledRejection', (reason: any, promise) => {
+  Logger.log(`Unhandled Rejection on promise ${promise}: ${reason.stack}`);
 });
+
+['exit', 'SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => process.on(signal, (code) => {
+  Logger.log(`Received ${signal} with code ${code}, shutting down.`);
+  process.exit(666);
+}));
 
 Logger.log('Service ethereum-writer started.');
 const config = parseArgs(process.argv);
