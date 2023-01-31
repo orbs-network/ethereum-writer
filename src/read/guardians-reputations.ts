@@ -73,6 +73,7 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
                     state,
                     config
                 ))
+                Logger.log(`** DONE isGuardianInSync`)
 
                 if (_guardianSyncResults.length > config.ReputationSampleSize) {
                     _guardianSyncResults.shift() // keep latest sample size
