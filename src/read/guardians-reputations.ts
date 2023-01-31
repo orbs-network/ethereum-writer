@@ -22,6 +22,9 @@ export async function readAllGuardiansReputations(config: ReputationConfigParams
             state
         );
 
+        Logger.log(`** DONE fetchGuardiansReputations`)
+
+
     } catch (err) {
 
         Logger.error(err.stack);
@@ -31,6 +34,8 @@ export async function readAllGuardiansReputations(config: ReputationConfigParams
 
     // last to be after all possible exceptions and processing delays
     state.ReputationsLastPollTime = getCurrentClockTime();
+    Logger.log(`** DONE getCurrentClockTime`)
+
 
     // log progress
     Logger.log(`Fetched reputations.`);

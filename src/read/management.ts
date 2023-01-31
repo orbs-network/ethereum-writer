@@ -107,6 +107,7 @@ export async function fetchManagementStatusWithTimeout(url: string, timeout = 50
     Logger.log(`** DONE fetching management service status from ${url}`)
 
      body = await res.text();
+    Logger.log(`** DONE getting body`)
 
     return decodeString(managementStatusResponseDecoder, body);
 

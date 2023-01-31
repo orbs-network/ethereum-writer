@@ -53,6 +53,11 @@ export async function runLoop(config: Configuration) {
 async function runLoopTick(config: Configuration, state: State) {
   Logger.log('Run loop waking up.');
 
+  const used: any = process.memoryUsage();
+  for (const key in used) {
+    console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`);
+  }
+
   // STEP 1: read all data (io)
 
   // is registered on netwok (polygon Ethereum)
