@@ -78,12 +78,15 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
                 if (_guardianSyncResults.length > config.ReputationSampleSize) {
                     _guardianSyncResults.shift() // keep latest sample size
                 }
+                Logger.log(`** DONE checking _guardianSyncResults`)
 
                 guardiansReputation[orbsAddress] = _guardianSyncResults.filter(rep => !rep).length;
+                Logger.log(`** DONE setting guardiansReputation`)
 
             })()
         )
     )
+    Logger.log(`** DONE Promise all`)
 
     return guardiansReputation
 
