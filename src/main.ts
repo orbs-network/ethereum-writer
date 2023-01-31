@@ -14,6 +14,8 @@ process.on('unhandledRejection', (reason: any, promise) => {
 
 ['exit', 'SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => process.on(signal, (code) => {
   Logger.log(`Received ${signal} with code ${code}, shutting down.`);
+  console.trace();
+  Logger.log(new Error().stack);
   process.exit(666);
 }));
 
