@@ -96,17 +96,13 @@ export async function fetchManagementStatusWithTimeout(url: string, timeout = 50
   try {
 
 
-    Logger.log(`** fetching management service status from ${url}`)
-
-     res = await fetch(url, {
+    res = await fetch(url, {
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
-    Logger.log(`** DONE fetching management service status from ${url}`)
-
-     body = await res.text();
+    body = await res.text();
 
     return decodeString(managementStatusResponseDecoder, body);
 
