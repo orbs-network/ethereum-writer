@@ -53,32 +53,32 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
 
     const guardiansReputation: { [address: string]: number } = {};
 
-    await Promise.all(
-        state.ManagementCurrentCommittee.map(
-            guardian => (async () => {
+    for (const guardian of state.ManagementCurrentCommittee) {
+        const ethAddress = guardian.EthAddress;
 
-                const ethAddress = guardian.EthAddress;
+        const orbsAddress = state.ManagementEthToOrbsAddress[ethAddress];
 
-                const orbsAddress = state.ManagementEthToOrbsAddress[ethAddress];
+        const _guardianSyncResults = guardiansSyncResults[ethAddress] = guardiansSyncResults[ethAddress] || []
 
-                const _guardianSyncResults = guardiansSyncResults[ethAddress] = guardiansSyncResults[ethAddress] || []
+        Logger.log("** starting isGuardianInSync")
+        _guardianSyncResults.push(await isGuardianInSync(
+            ethAddress,
+            state,
+            config
+        ))
+        Logger.log("** done isGuardianInSync")
 
-                _guardianSyncResults.push(await isGuardianInSync(
-                    ethAddress,
-                    state,
-                    config
-                ))
+        if (_guardianSyncResults.length > config.ReputationSampleSize) {
+            _guardianSyncResults.shift() // keep latest sample size
+        }
 
-                if (_guardianSyncResults.length > config.ReputationSampleSize) {
-                    _guardianSyncResults.shift() // keep latest sample size
-                }
+        guardiansReputation[orbsAddress] = _guardianSyncResults.filter(rep => !rep).length;
 
-                guardiansReputation[orbsAddress] = _guardianSyncResults.filter(rep => !rep).length;
+        Logger.log(`** done ${ethAddress}`)
 
-            })()
-        )
-    )
+    }
 
+    Logger.log(`guardiansReputation ${guardiansReputation}`)
     return guardiansReputation
 
 }
