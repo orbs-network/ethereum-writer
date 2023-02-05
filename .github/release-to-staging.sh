@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker login -u $DOCKER_HUB_LOGIN -p $DOCKER_HUB_PASSWORD
+docker login -u $DOCKER_HUB_STAGING_LOGIN -p $DOCKER_HUB_STAGING_PASSWORD
 
 export VERSION=$(cat .version)
 
