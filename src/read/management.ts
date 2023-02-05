@@ -7,6 +7,7 @@ import {findEthFromOrbsAddress} from '../model/helpers';
 import {getAbiByContractRegistryKey} from '@orbs-network/orbs-ethereum-contracts-v2';
 import AbortController from "abort-controller";
 
+// eslint-disable-next-line
 const fetch = require('isomorphic-fetch');
 
 // update guardianRegistration contract instance and address
