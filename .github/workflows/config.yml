@@ -2,7 +2,8 @@ name: "ethereum-writer-deployer"
 
 on:
   push:
-    branches: *
+    branches: 
+       - '**'  
 
 jobs:
   build-and-test:
