@@ -27,18 +27,6 @@ jobs:
       - store_artifacts:
           path: _out
 
-  build-and-release:
-    machine:
-      image: ubuntu-2004:202010-01 # recommended linux image
-    steps:
-      - checkout
-      - node/install:
-          node-version: '16.13.1'
-      - docker/install-docker
-      - run: ./boyar/create-version-file.sh
-      - node/install-packages
-      - run: ./boyar/docker-build.sh
-      - run: ./.circleci/release.sh
 
   build-and-release-to-staging:
     machine:
@@ -50,8 +38,9 @@ jobs:
       - docker/install-docker
       - run: ./boyar/create-version-file.sh
       - node/install-packages
-      - run: ./boyar/docker-build.sh
-      - run: ./.circleci/release-to-staging.sh
+#      - run: ./boyar/docker-build.sh
+#      - run: ./.circleci/release-to-staging.sh
+      - run: docker build -t local/ethereum-writer .
 
 workflows:
     build-and-test:
