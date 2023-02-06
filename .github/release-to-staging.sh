@@ -1,13 +1,15 @@
 #!/bin/bash
 
-docker login -u $DOCKER_HUB_STAGING_LOGIN -p $DOCKER_HUB_STAGING_PASSWORD
+docker login -u $DOCKER_HUB_LOGIN -p $DOCKER_HUB_PASSWORD
 
 export VERSION=$(cat .version)
 
-docker push orbsnetworkstaging/ethereum-writer:$VERSION
+docker push $DOCKER_HUB_IMAGE_PATH:$VERSION
 
-if [[ $CIRCLE_BRANCH == "master" ]] ;
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ $BRANCH_NAME == "master" ]] ;
 then
-  docker tag orbsnetworkstaging/ethereum-writer:$VERSION orbsnetworkstaging/ethereum-writer:experimental
-  docker push orbsnetworkstaging/ethereum-writer:experimental
+  docker tag $DOCKER_HUB_IMAGE_PATH:$VERSION $DOCKER_HUB_IMAGE_PATH:experimental
+  docker push $DOCKER_HUB_IMAGE_PATH:experimental
 fi
