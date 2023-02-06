@@ -319,6 +319,7 @@ test.serial('my orbsAddress not found in ManagementStatus', async (t) => {
 test.serial('my elections status not found in ManagementStatus', async (t) => {
   const state = new State();
   const partialResponse = _.cloneDeep(validManagementStatusResponse);
+  // @ts-ignore
   delete partialResponse.Payload.Guardians['e16e965a4cc3fcd597ecdb9cd9ab8f3e6a750ac9'].ElectionsStatus;
   nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(partialResponse));
   await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
@@ -382,6 +383,7 @@ test.serial('invalid JSON format ManagementStatus response from management servi
 test.serial('partial ManagementStatus response from management service', async (t) => {
   const state = new State();
   const partialResponse = _.cloneDeep(validManagementStatusResponse);
+  // @ts-ignore
   delete partialResponse.Payload.CurrentRefTime;
   nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(partialResponse));
   await t.throwsAsync(async () => {
@@ -391,13 +393,13 @@ test.serial('partial ManagementStatus response from management service', async (
 
 test.serial('GuardianRegistration::isRegistered', async (t) => {
   const state = new State();
-  
+
   // spin ganache
   nock(/ganache/)
     .post(/.*/, /eth_chainId/)
     .reply(200, JSON.stringify({"jsonrpc":"2.0","id":1,"result":"0x1"}));
 
-  // init web3 manually 
+  // init web3 manually
   const HTTP_TIMEOUT_SEC = 20;
   state.web3 = new Web3(
     new Web3.providers.HttpProvider('http://ganache:7545', {
@@ -415,5 +417,5 @@ test.serial('GuardianRegistration::isRegistered', async (t) => {
   t.log("blockNum", state.chainId);
 
   t.assert(typeof updateGuardianRegistrationContract);
-  t.assert(typeof isGuardianRegistered)  
+  t.assert(typeof isGuardianRegistered)
 });

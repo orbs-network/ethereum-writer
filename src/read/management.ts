@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import * as Logger from '../logger';
+import Logger from '../logger.js';
 import {State} from '../model/state';
 import fetch from 'node-fetch';
 import {array, bool, Decoder, decodeString, maybe, num, object, record, str} from 'ts-json-decode';
@@ -29,6 +29,7 @@ export function updateGuardianRegistrationContract(state: State, address:string)
     return;
   }
 
+  // @ts-ignore
   state.guardianRegistration = new state.web3.eth.Contract(regAbi, state.guardianRegistrationAddress);
   if(!state.guardianRegistration)
     Logger.error(`failed to create state.guardianRegistration web3 instance`);

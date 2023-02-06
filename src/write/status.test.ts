@@ -1,5 +1,5 @@
 import test from 'ava';
-import mockFs from 'mock-fs';
+import * as mockFs from 'mock-fs';
 import { writeStatusToDisk } from './status';
 import { State } from '../model/state';
 import { readFileSync } from 'fs';
@@ -65,7 +65,7 @@ test.serial('contains all payload fields', (t) => {
     ManagementInCommittee: false,
     ManagementIsStandby: false,
     TimeEnteredBadReputation: {},
-    TimeEnteredTopology: -1,    
+    TimeEnteredTopology: -1,
     Config: exampleConfig,
   });
 });

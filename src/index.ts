@@ -1,4 +1,4 @@
-import * as Logger from './logger';
+import Logger from './logger.js';
 import {getCurrentClockTime, sleep} from './helpers';
 import {Configuration} from './config';
 import {State} from './model/state';

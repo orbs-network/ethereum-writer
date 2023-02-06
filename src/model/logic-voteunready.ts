@@ -1,6 +1,6 @@
 import {CommitteeMember, Reputations, State} from './state';
 import {getCurrentClockTime, getToday} from '../helpers';
-import * as Logger from "../logger";
+import Logger from "../logger.js";
 import {calcMedianInPlace} from "./helpers";
 
 /**

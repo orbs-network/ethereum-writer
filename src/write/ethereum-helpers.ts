@@ -1,4 +1,4 @@
-import * as Logger from '../logger';
+import Logger from '../logger.js';
 import { State, EthereumTxStatus, GasPriceStrategy } from '../model/state';
 import { getCurrentClockTime, jsonStringifyComplexTypes, toNumber } from '../helpers';
 import { TransactionConfig, TransactionReceipt } from 'web3-core';
@@ -67,6 +67,7 @@ export async function signAndSendTransaction(
 
   Logger.log(`About to estimate gas for tx object: ${jsonStringifyComplexTypes(txConfig)}.`);
 
+  // @ts-ignore
   let gasLimit = toNumber(await state.web3.eth.estimateGas(txConfig));
   if (gasLimit <= 0) {
     throw new Error(`Cannot estimate gas for tx with data ${encodedAbi}.`);

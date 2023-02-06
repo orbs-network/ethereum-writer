@@ -1,4 +1,4 @@
-import * as Logger from '../logger';
+import Logger from '../logger.js';
 import { EthereumSyncStatusEnum, State } from './state';
 import { getCurrentClockTime } from '../helpers';
 

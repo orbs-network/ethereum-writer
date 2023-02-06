@@ -1,4 +1,4 @@
-import * as Logger from '../logger';
+import Logger from '../logger.js';
 import { State } from '../model/state';
 import { writeFileSync } from 'fs';
 import { ensureFileDirectoryExists, JsonResponse, getCurrentClockTime, getTenDayPeriod } from '../helpers';

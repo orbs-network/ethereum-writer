@@ -1,4 +1,4 @@
-import * as Logger from './logger';
+import Logger from './logger.js';
 import { runLoop } from '.';
 import { parseArgs } from './cli-args';
 

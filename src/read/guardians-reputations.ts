@@ -1,4 +1,4 @@
-import * as Logger from '../logger';
+import Logger from '../logger.js';
 import {Reputations, State} from '../model/state';
 import {getCurrentClockTime} from '../helpers';
 import {fetchManagementStatusWithTimeout, ManagementStatusResponse} from "./management";

@@ -1,5 +1,5 @@
 import { State } from './state';
-import * as Logger from '../logger';
+import Logger from '../logger.js';
 import { getToday, getCurrentClockTime } from '../helpers';
 import { findEthFromOrbsAddress } from './helpers';
 import { Configuration } from '../config';
@@ -44,7 +44,7 @@ export function shouldNotifyReadyForCommittee(
   if (state.EthereumSyncStatus != 'operational') return false;
   if (config.ElectionsAuditOnly) return false;
   if(!state.isRegistered) return false;
-  
+
 
   if (
     !state.ManagementInCommittee &&

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import fs from 'fs';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
-import * as Logger from './logger';
+import Logger from './logger.js';
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
