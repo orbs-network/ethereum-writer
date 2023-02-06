@@ -53,7 +53,7 @@ jobs:
       - name: release-to-docker-hub-staging
         env:
           DOCKER_HUB_IMAGE_PATH: orbsnetworkstaging/ethereum-writer
-          DOCKER_HUB_STAGING_LOGIN: ${{ secrets.DOCKER_HUB_STAGING_LOGIN }}
-          DOCKER_HUB_STAGING_PASSWORD: ${{ secrets.DOCKER_HUB_STAGING_PASSWORD }}
+          DOCKER_HUB_LOGIN: ${{ secrets.DOCKER_HUB_STAGING_LOGIN }}
+          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_STAGING_PASSWORD }}
         run: ./.github/release-to-staging.sh
 
