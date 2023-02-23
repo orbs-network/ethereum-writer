@@ -128,9 +128,9 @@ async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: Repu
 
     } catch (ignore) {
 
-        try {
+        // Cannot fetch management service status from guardian on port [80], attempting to fetch over fallback port GUARDIAN_FALLBACK_PORT
 
-            Logger.log(`Cannot fetch management service status from guardian [${ethAddress}] on port [80], attempting to fetch over fallback port [${GUARDIAN_FALLBACK_PORT}]`);
+        try {
 
             managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + ":" + GUARDIAN_FALLBACK_PORT);
 

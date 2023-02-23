@@ -1,12 +1,12 @@
 import _ from 'lodash';
 import * as Logger from '../logger';
 import {State} from '../model/state';
-import fetch from 'node-fetch';
 import {array, bool, Decoder, decodeString, maybe, num, object, record, str} from 'ts-json-decode';
 import {getCurrentClockTime} from '../helpers';
 import {findEthFromOrbsAddress} from '../model/helpers';
 import {getAbiByContractRegistryKey} from '@orbs-network/orbs-ethereum-contracts-v2';
 import AbortController from "abort-controller";
+import fetch from "node-fetch";
 
 // update guardianRegistration contract instance and address
 export function updateGuardianRegistrationContract(state: State, address:string){
@@ -95,7 +95,6 @@ export async function fetchManagementStatusWithTimeout(url: string, timeout = 50
 
   try {
 
-
     res = await fetch(url, {
       signal: controller.signal,
     });
@@ -108,7 +107,6 @@ export async function fetchManagementStatusWithTimeout(url: string, timeout = 50
 
   } catch (err) {
 
-    Logger.error(err.message);
     throw new Error(`Error fetching Management status from ${url}, response: ${res}, body: ${body}`);
 
   } finally {
@@ -118,6 +116,7 @@ export async function fetchManagementStatusWithTimeout(url: string, timeout = 50
   }
 
 }
+
 
 export interface ManagementStatusResponse {
   Payload: {
