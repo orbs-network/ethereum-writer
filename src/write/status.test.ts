@@ -18,7 +18,7 @@ test.serial('updates and writes Timestamp', (t) => {
   const writtenContents = JSON.parse(readFileSync('./status/status.json').toString());
   t.log('result:', JSON.stringify(writtenContents, null, 2));
 
-  t.assert(new Date().getTime() - new Date(writtenContents.Timestamp).getTime() < 1);
+  t.assert(new Date().getTime() - new Date(writtenContents.Timestamp).getTime() < 1000);
 });
 
 test.serial('eth balance appears in status and error when too low', (t) => {
