@@ -30,14 +30,7 @@ jobs:
         run: npm install
       - run: npm install --no-save tap-xunit
       - run: mkdir -p _out/unit _out/e2e
-      - run: npm test --  --timeout=1m --tap| npx tap-xunit > _out/unit/test.xml
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: success() || failure()    # run this step even if previous step failed
-        with:
-          name: JEST Tests            # Name of the check run which will be created
-          path: _out/unit/test.xml    # Path to test results
-          reporter: jest-junit
+      - run: npm test --  --timeout=1m
       - run: npm run build
 
   build-and-release-to-staging:
