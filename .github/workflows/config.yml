@@ -30,7 +30,7 @@ jobs:
         run: npm install
       - run: npm install --no-save tap-xunit
       - run: mkdir -p _out/unit _out/e2e
-      - run: npm test --  --timeout=1m
+      - run: npm test --  --timeout=1m --tap
       - run: npm run build
 
   build-and-release-to-staging:
