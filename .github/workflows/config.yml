@@ -37,7 +37,7 @@ jobs:
         with:
           name: AVA Tests            # Name of the check run which will be created
           path: _out/unit/test.xml    # Path to test results
-          reporter: dotnet-trx
+          reporter: mocha-json
       - run: npm run build
 
   build-and-release-to-staging:
