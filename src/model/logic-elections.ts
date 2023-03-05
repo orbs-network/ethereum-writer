@@ -75,6 +75,8 @@ export function shouldCheckCanJoinCommittee(state: State, config: EthereumElecti
   if (state.EthereumSyncStatus != 'operational') return false;
   if (config.ElectionsAuditOnly) return false;
   if (state.ManagementInCommittee) return false;
+  if(!state.isRegistered) return false;
+  
   return true;
 }
 

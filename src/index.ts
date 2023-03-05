@@ -81,15 +81,17 @@ async function runLoopTick(config: Configuration, state: State) {
 
   // query ethereum for Elections.canJoinCommittee (call)
   // every 10 min default
-  // add update to isRegistered
+  // update to isRegistered
   let ethereumCanJoinCommittee = false;
-  if (
-    getCurrentClockTime() - state.EthereumCanJoinCommitteeLastPollTime > config.EthereumCanJoinCommitteePollTimeSeconds &&
-    shouldCheckCanJoinCommittee(state, config)) {
+  if (getCurrentClockTime() - state.EthereumCanJoinCommitteeLastPollTime > config.EthereumCanJoinCommitteePollTimeSeconds ){
+    // isRegistered should be updated here
+    // under the EthereumCanJoinCommitteeLastPollTime interval
+    state.isRegistered = await isGuardianRegistered(state);
+    if (shouldCheckCanJoinCommittee(state, config)) {      
+      // dont send tx if not registered though      
       ethereumCanJoinCommittee = await queryCanJoinCommittee(config.NodeOrbsAddress, state);
-      state.isRegistered = await isGuardianRegistered(state);
+    } 
   }
-
   // STEP 2: update all state machine logic (compute)
 
   // time entered topology
