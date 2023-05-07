@@ -17,8 +17,7 @@ Logger.log('Service ethereum-writer started.');
 const config = parseArgs(process.argv);
 const censoredConfig = Object.assign({}, config);
 censoredConfig.EthereumEndpoint = censoredConfig.EthereumEndpoint.slice(0, -10) + "**********"
-Logger.log(`Input config: '${JSON.stringify(config)}'.`);
-Logger.log(`Censored config: '${JSON.stringify(censoredConfig)}'.`);
+Logger.log(`Input config: '${JSON.stringify(censoredConfig)}'.`);
 
 runLoop(config, censoredConfig).catch((err) => {
   Logger.log('Exception thrown from runLoop, shutting down:');
