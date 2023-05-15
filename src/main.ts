@@ -15,9 +15,11 @@ process.on('SIGINT', function () {
 
 Logger.log('Service ethereum-writer started.');
 const config = parseArgs(process.argv);
-Logger.log(`Input config: '${JSON.stringify(config)}'.`);
+const censoredConfig = Object.assign({}, config);
+censoredConfig.EthereumEndpoint = censoredConfig.EthereumEndpoint.slice(0, -10) + "**********"
+Logger.log(`Input config: '${JSON.stringify(censoredConfig)}'.`);
 
-runLoop(config).catch((err) => {
+runLoop(config, censoredConfig).catch((err) => {
   Logger.log('Exception thrown from runLoop, shutting down:');
   Logger.error(err.stack);
   process.exit(128);
