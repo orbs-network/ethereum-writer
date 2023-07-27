@@ -3,7 +3,7 @@ name: "ethereum-writer-deployer"
 on:
   push:
     branches:
-       - '**'
+      - '**'
   release:
     types: [ published ]
 
@@ -26,14 +26,21 @@ jobs:
       - run: docker --version
       - run: python --version
       - run: env
-      - name: Run npm install
-        run: npm install
+      - name: Run npm ci
+        run: npm ci
+      - run: npm run build
+      # Unit tests
       - run: npm install --no-save tap-xunit
       - run: mkdir -p _out/unit _out/e2e
       - run: npm test --  --timeout=1m
-      - run: npm run build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: ./dist
 
-  build-and-release-to-staging:
+  release-to-staging:
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -46,14 +53,17 @@ jobs:
           node-version: 16
       - name: setup-docker
         uses: docker-practice/actions-setup-docker@master
-      - run: ./boyar/create-version-file.sh
-      - name: Run npm install
-        run: npm install
-      - run: ./boyar/docker-build.sh
-      - name: release-to-docker-hub-staging
-        env:
-          DOCKER_HUB_IMAGE_PATH: orbsnetworkstaging/ethereum-writer
-          DOCKER_HUB_LOGIN: ${{ secrets.DOCKER_HUB_STAGING_LOGIN }}
-          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_STAGING_PASSWORD }}
-        run: ./.github/release-to-staging.sh
-
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: ./dist
+      - name: Generate version
+        run: ./create-version-file.sh
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_STAGING_LOGIN }}
+          password: ${{ secrets.DOCKER_HUB_STAGING_PASSWORD }}
+      - name: Build and push image
+        run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
