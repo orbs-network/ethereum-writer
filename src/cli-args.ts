@@ -12,23 +12,30 @@ export function parseArgs(argv: string[]): Configuration {
       type: 'array',
       required: false,
       string: true,
-      default: ['./config.json'],
       description: 'list of config files',
     })
     .exitProcess(false)
     .parse();
 
   // read input config JSON files
+  // If config.json not provided, required config values must be passed via environment variables
   try {
     res = Object.assign(
       {},
       defaultConfiguration,
-      ...args.config.map((configPath) => JSON.parse(readFileSync(configPath).toString()))
+      ...(args.config ?? []).map((configPath) => JSON.parse(readFileSync(configPath).toString()))
     );
   } catch (err) {
     Logger.error(`Cannot parse input JSON config files: [${args.config}].`);
     throw err;
   }
+
+  // Support passing required config values via environment variables
+  res.ManagementServiceEndpoint = process.env.MANAGEMENT_SERVICE_ENDPOINT ?? res.ManagementServiceEndpoint;
+  res.EthereumEndpoint = process.env.ETHEREUM_ENDPOINT ?? res.EthereumEndpoint;
+  res.SignerEndpoint = process.env.SIGNER_ENDPOINT ?? res.SignerEndpoint;
+  res.EthereumElectionsContract = process.env.ETHEREUM_ELECTIONS_CONTRACT ?? res.EthereumElectionsContract;
+  res.NodeOrbsAddress = process.env.NODE_ORBS_ADDRESS ?? res.NodeOrbsAddress;
 
   // validate JSON config
   try {
