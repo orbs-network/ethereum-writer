@@ -60,3 +60,19 @@ test('setConfigEnvVars uses environment variables when set', (t) => {
     t.assert(input[key as keyof Configuration] === mockEnv[camelCaseToSnakeCase(key) as keyof typeof mockEnv]);
   }
 });
+
+test('boolean environment variables are parsed correctly', (t) => {
+  const input: Configuration = { ...exampleConfig };
+
+  const testCases = [
+    { description: 'No env var set, should use default', envVar: undefined, expected: input.SuspendVoteUnready },
+    { description: 'Env var set to `true`, should resolve to true', envVar: 'true', expected: true },
+    { description: 'Env var set to `false`, should resolve to false', envVar: 'false', expected: false },
+  ];
+
+  for (const testCase of testCases) {
+    process.env.SUSPEND_VOTE_UNREADY = testCase.envVar;
+    setConfigEnvVars(input);
+    t.assert(input.SuspendVoteUnready === testCase.expected, testCase.description);
+  }
+});
