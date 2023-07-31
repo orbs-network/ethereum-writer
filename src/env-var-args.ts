@@ -54,8 +54,12 @@ export function setConfigEnvVars(config: Configuration): void {
   config.VoteUnreadyValiditySeconds = process.env.VOTE_UNREADY_VALIDITY_SECONDS
     ? Number(process.env.VOTE_UNREADY_VALIDITY_SECONDS)
     : config.VoteUnreadyValiditySeconds;
-  config.ElectionsAuditOnly = process.env.ELECTIONS_AUDIT_ONLY === 'true' ?? config.ElectionsAuditOnly;
-  config.SuspendVoteUnready = process.env.SUSPEND_VOTE_UNREADY === 'true' ?? config.SuspendVoteUnready;
+  config.ElectionsAuditOnly = process.env.ELECTIONS_AUDIT_ONLY
+    ? process.env.ELECTIONS_AUDIT_ONLY === 'true'
+    : config.ElectionsAuditOnly;
+  config.SuspendVoteUnready = process.env.SUSPEND_VOTE_UNREADY
+    ? process.env.SUSPEND_VOTE_UNREADY === 'true'
+    : config.SuspendVoteUnready;
   config.EthereumDiscountGasPriceFactor = process.env.ETHEREUM_DISCOUNT_GAS_PRICE_FACTOR
     ? Number(process.env.ETHEREUM_DISCOUNT_GAS_PRICE_FACTOR)
     : config.EthereumDiscountGasPriceFactor;
