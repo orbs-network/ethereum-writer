@@ -13,7 +13,8 @@ export function setConfigEnvVars(config: Configuration): void {
   config.EthereumEndpoint = process.env.ETHEREUM_ENDPOINT ?? config.EthereumEndpoint;
   config.SignerEndpoint = process.env.SIGNER_ENDPOINT ?? config.SignerEndpoint;
   config.EthereumElectionsContract = process.env.ETHEREUM_ELECTIONS_CONTRACT ?? config.EthereumElectionsContract;
-  config.NodeOrbsAddress = process.env.NODE_ORBS_ADDRESS ?? config.NodeOrbsAddress;
+  // TODO: Rename NodeOrbsAddress globally
+  config.NodeOrbsAddress = process.env.NODE_ADDRESS ?? config.NodeOrbsAddress;
   config.ManagementServiceEndpointSchema =
     process.env.MANAGEMENT_SERVICE_ENDPOINT_SCHEMA ?? config.ManagementServiceEndpointSchema;
   config.StatusJsonPath = process.env.STATUS_JSON_PATH ?? config.StatusJsonPath;

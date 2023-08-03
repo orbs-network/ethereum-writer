@@ -23,7 +23,7 @@ const mockEnv = {
   ETHEREUM_ENDPOINT: 'https://mainnet.infura.io/v3/1234567890',
   SIGNER_ENDPOINT: 'http://localhost:8081',
   ETHEREUM_ELECTIONS_CONTRACT: '0x1234567890',
-  NODE_ORBS_ADDRESS: '555550a3c12e86b4b5f39b213f7e19d048276dae',
+  NODE_ADDRESS: '555550a3c12e86b4b5f39b213f7e19d048276dae',
   MANAGEMENT_SERVICE_ENDPOINT_SCHEMA: 'http',
   STATUS_JSON_PATH: '/path/to/status.json',
   RUN_LOOP_POLL_TIME_SECONDS: 60,
@@ -57,6 +57,13 @@ test('setConfigEnvVars uses environment variables when set', (t) => {
   setConfigEnvVars(input);
 
   for (const key of Object.keys(exampleConfig)) {
+    // Env var is NODE_ADDRESS, but config is NodeOrbsAddress
+    if (key === 'NodeOrbsAddress') {
+      t.assert(
+        input[key as keyof Configuration] === mockEnv[camelCaseToSnakeCase('NodeAddress') as keyof typeof mockEnv]
+      );
+      continue;
+    }
     t.assert(input[key as keyof Configuration] === mockEnv[camelCaseToSnakeCase(key) as keyof typeof mockEnv]);
   }
 });

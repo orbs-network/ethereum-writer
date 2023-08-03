@@ -32,13 +32,13 @@ test('parseArgs with environment variables and no config', (t) => {
   const mockEthereumEndpoint = 'https://mainnet.infura.io/v3/1234567890';
   const mockSignerEndpoint = 'http://localhost:8081';
   const mockEthElectionsContract = '0x1234567890';
-  const mockNodeOrbsAddress = '555550a3c12e86b4b5f39b213f7e19d048276dae';
+  const mockNodeAddress = '555550a3c12e86b4b5f39b213f7e19d048276dae';
 
   process.env.MANAGEMENT_SERVICE_ENDPOINT = mockMgmtSvcEndpoint;
   process.env.ETHEREUM_ENDPOINT = mockEthereumEndpoint;
   process.env.SIGNER_ENDPOINT = mockSignerEndpoint;
   process.env.ETHEREUM_ELECTIONS_CONTRACT = mockEthElectionsContract;
-  process.env.NODE_ORBS_ADDRESS = mockNodeOrbsAddress;
+  process.env.NODE_ADDRESS = mockNodeAddress;
 
   const output = parseArgs([]);
 
@@ -47,7 +47,7 @@ test('parseArgs with environment variables and no config', (t) => {
   t.assert((output.ManagementServiceEndpoint = mockMgmtSvcEndpoint));
   t.assert((output.SignerEndpoint = mockSignerEndpoint));
   t.assert((output.EthereumElectionsContract = mockEthElectionsContract));
-  t.assert((output.NodeOrbsAddress = mockNodeOrbsAddress));
+  t.assert((output.NodeOrbsAddress = mockNodeAddress));
 });
 
 test('parseArgs: errors when incomplete env vars set', (t) => {
@@ -65,13 +65,13 @@ test('parseArgs: environment variables override config file', (t) => {
   const mockEthereumEndpoint = 'https://mainnet.infura.io/v3/1234567890';
   const mockSignerEndpoint = 'http://localhost:8081';
   const mockEthElectionsContract = '0x1234567890';
-  const mockNodeOrbsAddress = '555550a3c12e86b4b5f39b213f7e19d048276dae';
+  const mockNodeAddress = '555550a3c12e86b4b5f39b213f7e19d048276dae';
 
   process.env.MANAGEMENT_SERVICE_ENDPOINT = mockMgmtSvcEndpoint;
   process.env.ETHEREUM_ENDPOINT = mockEthereumEndpoint;
   process.env.SIGNER_ENDPOINT = mockSignerEndpoint;
   process.env.ETHEREUM_ELECTIONS_CONTRACT = mockEthElectionsContract;
-  process.env.NODE_ORBS_ADDRESS = mockNodeOrbsAddress;
+  process.env.NODE_ADDRESS = mockNodeAddress;
 
   mockFs({
     ['./some/file.json']: JSON.stringify(exampleConfig),
@@ -83,7 +83,7 @@ test('parseArgs: environment variables override config file', (t) => {
   t.assert((output.ManagementServiceEndpoint = mockMgmtSvcEndpoint));
   t.assert((output.SignerEndpoint = mockSignerEndpoint));
   t.assert((output.EthereumElectionsContract = mockEthElectionsContract));
-  t.assert((output.NodeOrbsAddress = mockNodeOrbsAddress));
+  t.assert((output.NodeOrbsAddress = mockNodeAddress));
 });
 
 test('parseArgs custom config file does not exist', (t) => {
