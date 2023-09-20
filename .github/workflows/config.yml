@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - '**'
+  pull_request:
+    branches:
+      - 'main'
   release:
     types: [ published ]
 
@@ -40,6 +43,7 @@ jobs:
           path: ./dist
 
   release-to-staging:
+    if: github.event_name == 'pull_request' && github.head_ref == 'main'
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
