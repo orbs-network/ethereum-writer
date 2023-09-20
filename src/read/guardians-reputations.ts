@@ -118,7 +118,13 @@ async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: Repu
 
     const guardian = state.ManagementCurrentTopology.find(guardian => guardian.EthAddress === ethAddress);
 
-    let managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + "");
+    let managementServiceEndpoint: string;
+
+    if (process.env.MANAGEMENT_SERVICE_ENDPOINT_SCHEMA) {
+        managementServiceEndpoint = process.env.MANAGEMENT_SERVICE_ENDPOINT_SCHEMA;
+      } else {
+        managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + '');
+      }
 
     try {
 
