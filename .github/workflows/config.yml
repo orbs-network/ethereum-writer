@@ -22,8 +22,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16
-    - name: setup-docker
-      uses: docker-practice/actions-setup-docker@master
     - name: Print tooling versions
       run: |
         node --version
@@ -57,6 +55,25 @@ jobs:
     - run: npm install --no-save tap-xunit
     - run: mkdir -p _out/unit _out/e2e
     - run: npm test -- --timeout=1m
+
+
+  version-bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: rickstaa/action-get-semver@v1
+        id: get_semver
+        with:
+          bump_level: "minor"
+      - name: Print current and next version
+        run: |
+          echo "Current version: ${{ steps.get_semver.outputs.current_version  }}"
+          echo "Next version: ${{ steps.get_semver.outputs.next_version }}"
 
   # release-to-staging:
   #   if: github.event_name == 'pull_request' && github.head_ref == 'main'
