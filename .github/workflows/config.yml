@@ -10,31 +10,31 @@ on:
     types: [ published ]
 
 jobs:
-  # build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Check out repository
-  #     uses: actions/checkout@v3
-  #     with:
-  #       fetch-depth: 0
-  #   - name: Setup node
-  #     uses: actions/setup-node@v3
-  #     with:
-  #       node-version: 16
-  #   - name: Print tooling versions
-  #     run: |
-  #       node --version
-  #       npm --version
-  #       docker --version
-  #       python --version
-  #   - name: Run npm ci
-  #     run: npm ci
-  #   - run: npm run build
-  #   - name: Upload build artifact
-  #     uses: actions/upload-artifact@v3
-  #     with:
-  #       name: build
-  #       path: ./dist
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Setup node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+    - name: Print tooling versions
+      run: |
+        node --version
+        npm --version
+        docker --version
+        python --version
+    - name: Run npm ci
+      run: npm ci
+    - run: npm run build
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: build
+        path: ./dist
 
   # test:
   #   needs: build
@@ -57,6 +57,7 @@ jobs:
 
   release-to-staging:
     # if: github.event_name == 'pull_request' && github.base_ref == 'master'
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
