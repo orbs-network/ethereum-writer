@@ -60,7 +60,7 @@ jobs:
     # if: github.event_name == 'pull_request' && github.base_ref == 'master'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -69,12 +69,13 @@ jobs:
         id: extract_title
         run: |
           TITLE="${{ github.event.pull_request.title }}"
-          echo "::set-output name=pr_title::$TITLE"
+          echo "PR title: $TITLE"
+          echo "pr_title=$TITLE" >> $GITHUB_ENV
 
       - name: Determine Version Increment
         id: version_increment
         run: |
-          TITLE="${{ steps.extract_title.outputs.pr_title }}"
+          TITLE="${{ env.pr_title }}"
           
           if [[ $TITLE == Patch* ]]; then
             echo "::set-output name=increment::patch"
