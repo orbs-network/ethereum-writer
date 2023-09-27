@@ -103,10 +103,14 @@ jobs:
             IMAGE_VERSION="${{ steps.get_semver.outputs.next_version }}"
           fi
 
-          # echo "Generated image version: $IMAGE_VERSION"
-          # echo "image_version=$IMAGE_VERSION" >> $GITHUB_ENV
-          # echo $IMAGE_VERSION > .version
-          echo "::set-output name=image_version::$IMAGE_VERSION"
+          echo "Generated image version: $IMAGE_VERSION"
+          echo $IMAGE_VERSION > .version
+
+      - name: Upload .version as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: version
+          path: .version
 
 
   release-to-staging:
@@ -125,6 +129,12 @@ jobs:
           name: build
           path: ./dist
 
+      - name: Download version artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: version
+          path: ./
+
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -133,7 +143,7 @@ jobs:
 
       - name: Build and push image
         # run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
-        run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:${{ needs.determine-version.output.image_version }} --push .
+        run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
 
 
   # release-to-staging:
