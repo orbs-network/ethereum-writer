@@ -122,6 +122,8 @@ jobs:
       - determine-version
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
       - name: Setup Docker
         uses: docker-practice/actions-setup-docker@master
 
@@ -156,6 +158,8 @@ jobs:
       - determine-version
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
       - name: Setup Docker
         uses: docker-practice/actions-setup-docker@master
 
