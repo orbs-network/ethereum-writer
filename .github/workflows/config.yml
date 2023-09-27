@@ -77,20 +77,21 @@ jobs:
           TITLE="${{ env.pr_title }}"
           
           if [[ $TITLE == Patch* ]]; then
-            echo "::set-output name=increment::patch"
+            increment="patch"
           elif [[ $TITLE == Minor* ]]; then
-            echo "::set-output name=increment::minor"
+            increment="minor"
           elif [[ $TITLE == Major* ]]; then
-            echo "::set-output name=increment::major"
+            increment="major"
           else
             echo "Invalid PR title. Exiting."
             exit 1
           fi
+          echo "increment=$increment" >> $GITHUB_ENV
 
       - uses: rickstaa/action-get-semver@v1
         id: get_semver
         with:
-          bump_level: "${{ steps.version_increment.outputs.increment }}"
+          bump_level: "${{ env.increment }}"
 
       - name: Print current and next version
         run: |
