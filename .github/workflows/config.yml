@@ -77,11 +77,11 @@ jobs:
           TITLE=$(echo "${{ env.pr_title }}" | awk '{print tolower($0)}')
           echo "Lowercased PR title: $TITLE"
 
-          if [[ $TITLE == Patch* ]]; then
+          if [[ $TITLE == patch* ]]; then
             increment="patch"
-          elif [[ $TITLE == Minor* ]]; then
+          elif [[ $TITLE == minor* ]]; then
             increment="minor"
-          elif [[ $TITLE == Major* ]]; then
+          elif [[ $TITLE == major* ]]; then
             increment="major"
           else
             echo "Invalid PR title. Exiting."
