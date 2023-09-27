@@ -2,6 +2,8 @@ name: "ethereum-writer-deployer"
 
 on:
   pull_request:
+   branches: 
+      - master
    types:
       - opened
       - synchronize
@@ -144,6 +146,42 @@ jobs:
       - name: Build and push image
         # run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
         run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
+
+
+  release-to-staging-immediate:
+    if: github.event_name == 'pull_request' && github.event.label.name == 'immediate'
+    needs: 
+      - build
+      - test
+      - determine-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Docker
+        uses: docker-practice/actions-setup-docker@master
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: ./dist
+
+      - name: Download version artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: version
+          path: ./
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_STAGING_LOGIN }}
+          password: ${{ secrets.DOCKER_HUB_STAGING_PASSWORD }}
+
+      - name: Build and push image
+        
+        run: | 
+          IMMEDIATE_VERSION=$(awk -F'-' '{print $1"-immediate"}' .version)
+          docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$IMMEDIATE_VERSION --push .
 
 
   # release-to-staging:
