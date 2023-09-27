@@ -105,6 +105,7 @@ jobs:
           COMMIT_HASH=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_VERSION="${{ steps.get_semver.outputs.next_version }}-$COMMIT_HASH"
           echo "image_version=$IMAGE_VERSION" >> $GITHUB_ENV
+          echo $IMAGE_VERSION > .version
       - name: setup-docker
         uses: docker-practice/actions-setup-docker@master
       - name: Download build artifact
