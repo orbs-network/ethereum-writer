@@ -74,8 +74,8 @@ jobs:
       - name: Determine Version Increment
         id: version_increment
         run: |
-          TITLE="${{ env.pr_title }}"
-          
+          TITLE="${{ env.pr_title,, }}" # Convert PR title to lowercase
+
           if [[ $TITLE == Patch* ]]; then
             increment="patch"
           elif [[ $TITLE == Minor* ]]; then
