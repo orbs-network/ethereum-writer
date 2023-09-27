@@ -1,9 +1,6 @@
 name: "ethereum-writer-deployer"
 
 on:
-  push:
-    branches:
-      - '**'
   pull_request:
    types:
       - opened
@@ -59,18 +56,12 @@ jobs:
     - run: mkdir -p _out/unit _out/e2e
     - run: npm test -- --timeout=1m
 
-  release-to-staging:
-    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master'
+  determine-version:
     needs: 
       - build
       - test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
       - name: Extract PR title
         id: extract_title
         run: |
@@ -105,10 +96,25 @@ jobs:
         run: |
           COMMIT_HASH=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_VERSION="${{ steps.get_semver.outputs.next_version }}-$COMMIT_HASH"
-          echo "Generated image version: $IMAGE_VERSION"
-          echo "image_version=$IMAGE_VERSION" >> $GITHUB_ENV
-          echo $IMAGE_VERSION > .version
 
+          if [[ ${{ github.event_name }} == 'release' ]]; then
+            echo "Release event detected. Using version from tag."
+            IMAGE_VERSION="${{ steps.get_semver.outputs.next_version }}"
+          fi
+
+          # echo "Generated image version: $IMAGE_VERSION"
+          # echo "image_version=$IMAGE_VERSION" >> $GITHUB_ENV
+          # echo $IMAGE_VERSION > .version
+          echo "::set-output name=image_version::$IMAGE_VERSION"
+
+
+  release-to-staging:
+    needs: 
+      - build
+      - test
+      - determine-version
+    runs-on: ubuntu-latest
+    steps:
       - name: Setup Docker
         uses: docker-practice/actions-setup-docker@master
 
@@ -126,7 +132,7 @@ jobs:
 
       - name: Build and push image
         # run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
-        run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:${{ env.image_version }} --push .
+        run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:${{ needs.determine-version.output.image_version }} --push .
 
 
   # release-to-staging:
