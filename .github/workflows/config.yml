@@ -9,6 +9,7 @@ on:
       - synchronize
       - reopened
       - edited
+      - labeled
   release:
     types: [ published ]
 
@@ -186,34 +187,3 @@ jobs:
         run: | 
           IMMEDIATE_VERSION=$(awk -F'-' '{print $1"-immediate"}' .version)
           docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$IMMEDIATE_VERSION --push .
-
-
-  # release-to-staging:
-  #   if: github.event_name == 'pull_request' && github.head_ref == 'main'
-  #   needs: build-and-test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Check out repository
-  #       uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 0
-  #     - name: Setup node
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 16
-  #     - name: setup-docker
-  #       uses: docker-practice/actions-setup-docker@master
-  #     - name: Download build artifact
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: build
-  #         path: ./dist
-  #     - name: Generate version
-  #       run: ./create-version-file.sh
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v2
-  #       with:
-  #         username: ${{ secrets.DOCKER_HUB_STAGING_LOGIN }}
-  #         password: ${{ secrets.DOCKER_HUB_STAGING_PASSWORD }}
-  #     - name: Build and push image
-  #       run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
