@@ -74,7 +74,7 @@ jobs:
       - name: Determine Version Increment
         id: version_increment
         run: |
-          TITLE="${{ env.pr_title,, }}" # Convert PR title to lowercase
+          TITLE=$(echo "${{ env.pr_title }}" | awk '{print tolower($0)}') 
 
           if [[ $TITLE == Patch* ]]; then
             increment="patch"
