@@ -84,7 +84,7 @@ jobs:
     needs: 
       - build
       - test
-      - determine-version
+      - create-version-file
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -121,7 +121,7 @@ jobs:
     needs: 
       - build
       - test
-      - determine-version
+      - create-version-file
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
