@@ -59,56 +59,20 @@ jobs:
     - run: mkdir -p _out/unit _out/e2e
     - run: npm test -- --timeout=1m
 
-  determine-version:
+  create-version-file:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Extract PR title
-        id: extract_title
-        run: |
-          TITLE="${{ github.event.pull_request.title }}"
-          echo "PR title: $TITLE"
-          echo "pr_title=$TITLE" >> $GITHUB_ENV
-
-      - name: Determine Version Increment
-        id: version_increment
-        run: |
-          TITLE=$(echo "${{ env.pr_title }}" | awk '{print tolower($0)}')
-          echo "Lowercased PR title: $TITLE"
-
-          if [[ $TITLE == patch* ]]; then
-            increment="patch"
-          elif [[ $TITLE == minor* ]]; then
-            increment="minor"
-          elif [[ $TITLE == major* ]]; then
-            increment="major"
-          else
-            echo "Invalid PR title. Exiting."
-            exit 1
-          fi
-          echo "increment=$increment" >> $GITHUB_ENV
-
-      - uses: rickstaa/action-get-semver@v1
-        id: get_semver
+      - id: getVersion
+        uses: Luke-Rogerson/pr-bump-version@v1 
         with:
-          bump_level: "${{ env.increment }}"
-
-      - name: Generate image version
-        run: |
-          COMMIT_HASH=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_VERSION="${{ steps.get_semver.outputs.next_version }}-$COMMIT_HASH"
-
-          if [[ ${{ github.event_name }} == 'release' ]]; then
-            echo "Release event detected. Using version from tag."
-            IMAGE_VERSION="${{ steps.get_semver.outputs.next_version }}"
-          fi
-
-          echo "Generated image version: $IMAGE_VERSION"
-          echo $IMAGE_VERSION > .version
-
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          echo "Version is ${{ steps.getVersion.outputs.version }}"
+          echo ${{ steps.getVersion.outputs.version }} > .version
       - name: Upload .version as artifact
         uses: actions/upload-artifact@v3
         with:
@@ -147,8 +111,9 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_STAGING_PASSWORD }}
 
       - name: Build and push image
-        # run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
-        run: docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
+        run: |
+          echo "Tagging image with $(cat .version)"
+          docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$(cat .version) --push .
 
 
   release-to-staging-immediate:
@@ -186,4 +151,5 @@ jobs:
         
         run: | 
           IMMEDIATE_VERSION=$(awk -F'-' '{print $1"-immediate"}' .version)
+          echo "Tagging image with $IMMEDIATE_VERSION"
           docker buildx build --platform linux/amd64,linux/arm64 -t orbsnetworkstaging/ethereum-writer:$IMMEDIATE_VERSION --push .
