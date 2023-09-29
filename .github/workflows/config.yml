@@ -68,10 +68,8 @@ jobs:
           fetch-depth: 0
       - id: getVersion
         uses: Luke-Rogerson/pr-bump-version@v1 
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: |
-          echo "Version is ${{ steps.getVersion.outputs.version }}"
+          echo "Outputted version is ${{ steps.getVersion.outputs.version }}"
           echo ${{ steps.getVersion.outputs.version }} > .version
       - name: Upload .version as artifact
         uses: actions/upload-artifact@v3
