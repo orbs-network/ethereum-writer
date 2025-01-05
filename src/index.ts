@@ -135,7 +135,18 @@ async function runLoopTick(config: Configuration, state: State) {
 
 async function initializeState(config: Configuration): Promise<State> {
   const state = new State();
-  await initWeb3Client(config.EthereumEndpoint, config.EthereumElectionsContract, state);
+  // check if config.EthereumEndpoint is array or single.
+
+  let ethereumElectionsContract = '';
+
+  if (Array.isArray(config.EthereumEndpoint)) {
+    // if array, use the first one
+    ethereumElectionsContract = (Array)(config.EthereumElectionsContract)[0];
+  } else {
+    ethereumElectionsContract = config.EthereumElectionsContract;
+  }
+
+  await initWeb3Client(ethereumElectionsContract, config.EthereumElectionsContract, state);
   state.signer = new Signer(config.SignerEndpoint);
   return state;
 }
