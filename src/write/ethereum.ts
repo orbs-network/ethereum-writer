@@ -16,17 +16,22 @@ import {
   getAbiByContractAddress,
   getAbiByContractRegistryKey,
 } from '@orbs-network/orbs-ethereum-contracts-v2';
+import MultiHttpProvider from "../multi-http-provider";
+import {HttpProvider} from "web3-core";
 
 const HTTP_TIMEOUT_SEC = 20;
 
-export async function initWeb3Client(ethereumEndpoint: string, electionsContractAddress: string, state: State) {
-  // init web3
-  state.web3 = new Web3(
-    new Web3.providers.HttpProvider(ethereumEndpoint, {
-      keepAlive: true,
+export async function initWeb3Client(ethereumEndpoint: string[], electionsContractAddress: string, state: State) {
+  const multiProvider = new MultiHttpProvider(
+    ethereumEndpoint,
+    {
+      keepAlive : false,
       timeout: HTTP_TIMEOUT_SEC * 1000,
-    })
+    }
   );
+
+  state.web3 = new Web3(multiProvider as unknown as HttpProvider);
+
   state.web3.eth.transactionBlockTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionPollingTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionConfirmationBlocks = 1; // to stop web3 from polling pending tx
