@@ -29,13 +29,13 @@ test('parseArgs with no file', (t) => {
 
 test('parseArgs with environment variables and no config', (t) => {
   const mockMgmtSvcEndpoint = 'http://localhost:8080';
-  const mockEthereumEndpoint = 'https://mainnet.infura.io/v3/1234567890';
+  const mockEthereumEndpoint : string[] = ['https://mainnet.infura.io/v3/1234567890'];
   const mockSignerEndpoint = 'http://localhost:8081';
   const mockEthElectionsContract = '0x1234567890';
   const mockNodeAddress = '555550a3c12e86b4b5f39b213f7e19d048276dae';
 
   process.env.MANAGEMENT_SERVICE_ENDPOINT = mockMgmtSvcEndpoint;
-  process.env.ETHEREUM_ENDPOINT = mockEthereumEndpoint;
+  process.env.ETHEREUM_ENDPOINT = mockEthereumEndpoint.toString();
   process.env.SIGNER_ENDPOINT = mockSignerEndpoint;
   process.env.ETHEREUM_ELECTIONS_CONTRACT = mockEthElectionsContract;
   process.env.NODE_ADDRESS = mockNodeAddress;
@@ -62,13 +62,13 @@ test('parseArgs: errors when incomplete env vars set', (t) => {
 
 test('parseArgs: environment variables override config file', (t) => {
   const mockMgmtSvcEndpoint = 'http://localhost:8080';
-  const mockEthereumEndpoint = 'https://mainnet.infura.io/v3/1234567890';
+  const mockEthereumEndpoint = ['https://mainnet.infura.io/v3/1234567890'];
   const mockSignerEndpoint = 'http://localhost:8081';
   const mockEthElectionsContract = '0x1234567890';
   const mockNodeAddress = '555550a3c12e86b4b5f39b213f7e19d048276dae';
 
   process.env.MANAGEMENT_SERVICE_ENDPOINT = mockMgmtSvcEndpoint;
-  process.env.ETHEREUM_ENDPOINT = mockEthereumEndpoint;
+  process.env.ETHEREUM_ENDPOINT = mockEthereumEndpoint.toString();
   process.env.SIGNER_ENDPOINT = mockSignerEndpoint;
   process.env.ETHEREUM_ELECTIONS_CONTRACT = mockEthElectionsContract;
   process.env.NODE_ADDRESS = mockNodeAddress;

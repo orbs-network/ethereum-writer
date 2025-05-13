@@ -137,13 +137,18 @@ async function initializeState(config: Configuration): Promise<State> {
   const state = new State();
   // check if config.EthereumEndpoint is array or single.
 
-  let ethereumEndpoints = '';
+  let ethereumEndpoints: string[] = [];
 
   if (Array.isArray(config.EthereumEndpoint)) {
-    // if array, use the first one
-    ethereumEndpoints = (config.EthereumEndpoint as Array<string>)[0];
-  } else {
     ethereumEndpoints = config.EthereumEndpoint;
+  } else {
+    // guess if we are polygon or ethereum
+    if (JSON.stringify(config.EthereumEndpoint).includes('polygon')) {
+      ethereumEndpoints.push ('https://rpcman-fastly.orbs.network/rpc?chain=polygon&appId=guardian&key=888798GHWJ759843GFDSJK759843');
+    } else {
+      ethereumEndpoints.push ('https://rpcman-fastly.orbs.network/rpc?chain=ethereum&appId=guardian&key=888798GHWJ759843GFDSJK759843');
+    }
+    ethereumEndpoints.push (config.EthereumEndpoint);
   }
 
   await initWeb3Client(ethereumEndpoints, config.EthereumElectionsContract, state);
