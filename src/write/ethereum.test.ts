@@ -24,7 +24,7 @@ test('initializes web3 and contracts', async (t) => {
     .post(/.*/, /eth_chainId/)
     .reply(200, JSON.stringify({"jsonrpc":"2.0","id":1,"result":"0x1"}));
 
-  await initWeb3Client('http://ganache:7545/', '0xf8B352100dE45D2668768290504DC89e85766E02', state);
+  await initWeb3Client(['http://ganache:7545/'], '0xf8B352100dE45D2668768290504DC89e85766E02', state);
   t.assert(state.web3);
   t.assert(state.ethereumElectionsContract);
 });

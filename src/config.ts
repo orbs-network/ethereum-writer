@@ -1,6 +1,6 @@
 export interface Configuration {
   ManagementServiceEndpoint: string; // does not have default
-  EthereumEndpoint: string; // does not have default
+  EthereumEndpoint: string[]; // does not have default
   SignerEndpoint: string; // does not have default
   EthereumElectionsContract: string; // does not have default
   NodeOrbsAddress: string; // does not have default

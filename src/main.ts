@@ -16,7 +16,8 @@ process.on('SIGINT', function () {
 Logger.log('Service ethereum-writer started.');
 const config = parseArgs(process.argv);
 const censoredConfig = Object.assign({}, config);
-censoredConfig.EthereumEndpoint = censoredConfig.EthereumEndpoint.slice(0, -10) + "**********"
+censoredConfig.EthereumEndpoint = censoredConfig.EthereumEndpoint.map((endpoint) => endpoint.slice(0, 30) + "**********");
+
 Logger.log(`Input config: '${JSON.stringify(censoredConfig)}'.`);
 
 runLoop(config, censoredConfig).catch((err) => {
