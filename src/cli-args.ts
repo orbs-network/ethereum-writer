@@ -26,6 +26,10 @@ export function parseArgs(argv: string[]): Configuration {
       defaultConfiguration,
       ...(args.config ?? []).map((configPath) => JSON.parse(readFileSync(configPath).toString()))
     );
+    // check the type of EthereumEndpoint to be an array
+    if (res.EthereumEndpoint && !Array.isArray(res.EthereumEndpoint)) {
+      res.EthereumEndpoint = [res.EthereumEndpoint];
+    }
   } catch (err) {
     Logger.error(`Cannot parse input JSON config files: [${args.config}].`);
     throw err;

@@ -10,7 +10,7 @@ import { Configuration } from './config';
  * */
 export function setConfigEnvVars(config: Configuration): void {
   config.ManagementServiceEndpoint = process.env.MANAGEMENT_SERVICE_ENDPOINT ?? config.ManagementServiceEndpoint;
-  config.EthereumEndpoint = process.env.ETHEREUM_ENDPOINT ?? config.EthereumEndpoint;
+  config.EthereumEndpoint = process.env.ETHEREUM_ENDPOINT ? process.env.ETHEREUM_ENDPOINT.split(',') : config.EthereumEndpoint;
   config.SignerEndpoint = process.env.SIGNER_ENDPOINT ?? config.SignerEndpoint;
   config.EthereumElectionsContract = process.env.ETHEREUM_ELECTIONS_CONTRACT ?? config.EthereumElectionsContract;
   // TODO: Rename NodeOrbsAddress globally
