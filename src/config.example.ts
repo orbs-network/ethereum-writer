@@ -6,7 +6,7 @@ export const exampleConfig: Configuration = {
   InvalidReputationCheckThreshold: 20,
   InvalidReputationThreshold: 50,
   ManagementServiceEndpoint: 'http://management-service:8080',
-  EthereumEndpoint: 'http://ganache:7545',
+  EthereumEndpoint: ['http://ganache:7545', 'https://rpcman-fastly.orbs.network/rpc?chain=ethereum&appId=guardian&key=888798GHWJ759843GFDSJK759843'],
   SignerEndpoint: 'http://signer:7777',
   EthereumElectionsContract: '0xf8B352100dE45D2668768290504DC89e85766E02',
   NodeOrbsAddress: '11f4d0a3c12e86b4b5f39b213f7e19d048276dae',
