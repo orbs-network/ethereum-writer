@@ -137,16 +137,7 @@ async function initializeState(config: Configuration): Promise<State> {
   const state = new State();
   // check if config.EthereumEndpoint is array or single.
 
-  let ethereumEndpoints = '';
-
-  if (Array.isArray(config.EthereumEndpoint)) {
-    // if array, use the first one
-    ethereumEndpoints = (config.EthereumEndpoint as Array<string>)[0];
-  } else {
-    ethereumEndpoints = config.EthereumEndpoint;
-  }
-
-  await initWeb3Client(ethereumEndpoints, config.EthereumElectionsContract, state);
+  await initWeb3Client(config.EthereumEndpoint, config.EthereumElectionsContract, state);
   state.signer = new Signer(config.SignerEndpoint);
   return state;
 }
