@@ -5,7 +5,8 @@ services:
             context: .
             dockerfile: ./Dockerfile-app.test
     signer:
-        image: orbsnetwork/signer:experimental
+        #image: orbsnetwork/signer:experimental
+        image: orbsnetwork/signer:v2.4.0
         ports:
             - 7777:7777
         volumes:
