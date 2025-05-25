@@ -32,7 +32,7 @@ export function parseArgs(argv: string[]): Configuration {
     }
 
     if (res.EthereumEndpoint && res.EthereumEndpoint.length > 0) {
-      if (JSON.stringify(res.EthereumEndpoint).includes('polygon')) {
+      if (JSON.stringify(res.EthereumEndpoint).includes('polygon') || JSON.stringify(res.EthereumEndpoint).includes('matic')) {
         if (!JSON.stringify(res.EthereumEndpoint).includes('rpcman')) {
           res.EthereumEndpoint.push('https://rpcman-fastly.orbs.network/rpc?chain=polygon&appId=guardian&key=888798GHWJ759843GFDSJK759843');
         }
