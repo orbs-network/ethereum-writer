@@ -7,8 +7,6 @@ WORKDIR /opt/orbs
 COPY package*.json ./
 COPY .version ./version
 
-RUN apk add --no-cache git
-
 # see https://github.com/nodejs/docker-node/issues/282
 
 # --no-cache: download package index on-the-fly, no need to cleanup afterwards
@@ -20,7 +18,9 @@ RUN apk --no-cache --virtual build-dependencies add \
     && npm install \
     && apk del build-dependencies
 
-RUN npm install
+
+RUN apk add --no-cache git
+RUN npm install 
 
 COPY dist ./dist
 
