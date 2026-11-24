@@ -2,6 +2,7 @@ import * as Logger from '../logger';
 import {Reputations, State} from '../model/state';
 import {getCurrentClockTime} from '../helpers';
 import {fetchManagementStatusWithTimeout, ManagementStatusResponse} from "./management";
+import {describeError} from "../redact";
 
 const GUARDIAN_FALLBACK_PORT = "18888";
 
@@ -24,7 +25,7 @@ export async function readAllGuardiansReputations(config: ReputationConfigParams
 
     } catch (err) {
 
-        Logger.error(err.stack);
+        Logger.error(describeError(err));
         state.Reputations = {};
 
     }
@@ -63,11 +64,13 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
 
                 const _guardianSyncResults = guardiansSyncResults[ethAddress] = guardiansSyncResults[ethAddress] || []
 
-                _guardianSyncResults.push(await isGuardianInSync(
+                const inSync = await isGuardianInSync(
                     ethAddress,
                     state,
                     config
-                ))
+                );
+                // undefined = we have no address to check: no sample, rather than a bad one
+                if (inSync !== undefined) _guardianSyncResults.push(inSync);
 
                 if (_guardianSyncResults.length > config.ReputationSampleSize) {
                     _guardianSyncResults.shift() // keep latest sample size
@@ -90,9 +93,11 @@ async function fetchGuardiansReputations(config: ReputationConfigParams, state: 
  * @param state
  * @param config
  */
-async function isGuardianInSync(ethAddress: string, state: State, config: ReputationConfigParams): Promise<boolean> {
+async function isGuardianInSync(ethAddress: string, state: State, config: ReputationConfigParams): Promise<boolean | undefined> {
 
     const now = getCurrentClockTime();
+
+    if (!state.ManagementCurrentTopology.find(guardian => guardian.EthAddress === ethAddress)?.Ip) return undefined;
 
     const response = await fetchMnmgnmtSrvStatusForGuardian(
         ethAddress,
@@ -100,7 +105,7 @@ async function isGuardianInSync(ethAddress: string, state: State, config: Reputa
         state
     );
 
-    return response !== null && response.Payload && (now - response.Payload.CurrentRefTime) < config.InvalidEthereumSyncSeconds;
+    return response !== null && !!response.Payload && (now - response.Payload.CurrentRefTime) < config.InvalidEthereumSyncSeconds;
 
 }
 
@@ -118,13 +123,10 @@ async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: Repu
 
     const guardian = state.ManagementCurrentTopology.find(guardian => guardian.EthAddress === ethAddress);
 
-    let managementServiceEndpoint: string;
+    if (!guardian?.Ip) return null;
 
-    if (process.env.MANAGEMENT_SERVICE_ENDPOINT_SCHEMA) {
-        managementServiceEndpoint = process.env.MANAGEMENT_SERVICE_ENDPOINT_SCHEMA;
-      } else {
-        managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + '');
-      }
+    // MANAGEMENT_SERVICE_ENDPOINT_SCHEMA is already merged into config; it is a template, so substitute the IP
+    let managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian.Ip);
 
     try {
 
@@ -138,7 +140,7 @@ async function fetchMnmgnmtSrvStatusForGuardian(ethAddress: string, config: Repu
 
         try {
 
-            managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian?.Ip + ":" + GUARDIAN_FALLBACK_PORT);
+            managementServiceEndpoint = config.ManagementServiceEndpointSchema.replace(/{{GUARDIAN_IP}}/g, guardian.Ip + ":" + GUARDIAN_FALLBACK_PORT);
 
             response = await fetchManagementStatusWithTimeout(
                 managementServiceEndpoint

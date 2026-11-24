@@ -1,13 +1,14 @@
 import Web3 from 'web3';
 import { Contract } from 'web3-eth-contract';
 import * as Orbs from 'orbs-client-sdk';
-import { getCurrentClockTime, getCurrentVersion } from '../helpers';
+import { getCurrentClockTime, getCurrentVersion, getCurrentCommit } from '../helpers';
 import Signer from 'orbs-signer-client';
 
 export class State {
   // not updated
   ServiceLaunchTime = getCurrentClockTime(); // UTC seconds
   CurrentVersion = getCurrentVersion(); // v1.2.3
+  CurrentCommit = getCurrentCommit(); // git sha the image was built from
   myEthGuardianAddress = '';
   
   // updated by read/management.ts
@@ -22,6 +23,9 @@ export class State {
   ManagementCurrentCommittee: CommitteeMember[] = [];
   ManagementCurrentStandbys: { EthAddress: string }[] = [];
   ManagementCurrentTopology: { EthAddress: string, Ip: string }[] = [];
+  // whether the reader's last status can be acted on; nothing is sent unless it is 'ok'
+  ReaderStatus: ReaderStatusEnum = 'unknown';
+  ReaderReason = ''; // why ReaderStatus is not 'ok', URL-free
 
   // updated by read/vchain-metrics.ts
   VchainMetricsLastPollTime = 0; // UTC seconds
@@ -41,6 +45,14 @@ export class State {
   EthereumConsecutiveTxTimeouts = 0;
   EthereumCommittedTxStats: { [day: string]: number } = {};
   EthereumFeesStats: { [month: string]: number } = {}; // number in eth
+  EthereumDailyNonce?: { Day: string; Nonce: number }; // first nonce seen each UTC day: counts every tx mined from the address
+  SpendingLimitReason = ''; // set while a spending limit stops sends
+  SignerError?: { Time: number; Message: string }; // last signer failure, cleared on a successful signature
+  EthereumRpcError = ''; // last Ethereum RPC failure, cleared on a successful tick
+
+  // updated by index.ts (run loop)
+  LastTickTime = 0; // UTC seconds of the last completed tick, 0 before the first
+  LastTickError = ''; // URL-free
 
   // updated by index.ts
   TimeEnteredTopology = -1; // UTC seconds
@@ -63,13 +75,15 @@ export class State {
   orbsAccount = Orbs.createAccount();
   orbsClientPerVchain: { [VirtualChainId: string]: Orbs.Client } = {};
 
-  chainId = 1;
+  chainId = 0; // read from the RPC on startup; 0 = unknown, nothing is signed until it is known
   isRegistered:boolean|undefined = undefined;
 }
 
 // helpers
 
 export type EthereumSyncStatusEnum = 'out-of-sync' | 'operational' | 'tx-pending' | 'need-reset';
+
+export type ReaderStatusEnum = 'unknown' | 'ok' | 'syncing' | 'error' | 'unreachable' | 'invalid';
 
 export type Reputations = { [OrbsAddress: string]: number };
 
@@ -93,6 +107,8 @@ export interface EthereumTxStatus {
   Status: 'pending' | 'final' | 'failed-send' | 'timeout' | 'revert'; // final according to ManagementEthRefBlock
   TxHash: string;
   EthBlock: number;
+  Target?: string; // vote-unready: the guardian voted against
+  Error?: string; // why a send failed, URL-free
   OnFinal?: () => void;
 }
 

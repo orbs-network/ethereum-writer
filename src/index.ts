@@ -2,7 +2,8 @@ import * as Logger from './logger';
 import {getCurrentClockTime, sleep} from './helpers';
 import {Configuration} from './config';
 import {State} from './model/state';
-import {writeStatusToDisk} from './write/status';
+import {restoreFromStatusFile, StatusReporter} from './write/status';
+import {describeError, describeErrorStack} from './redact';
 import { readManagementStatus, isGuardianRegistered } from './read/management';
 import {readAllGuardiansReputations} from './read/guardians-reputations';
 import {calcEthereumSyncStatus} from './model/logic-ethsync';
@@ -17,53 +18,58 @@ import Signer from 'orbs-signer-client';
 import {
   initWeb3Client,
   queryCanJoinCommittee,
+  readChainId,
   readEtherBalance,
   readPendingTransactionStatus,
   sendEthereumElectionsTransaction,
   sendEthereumVoteUnreadyTransaction,
 } from './write/ethereum';
 
-export async function runLoop(config: Configuration, censoredConfig: Configuration) {
+export async function runLoop(config: Configuration) {
   // TODO: Yuval- contracts addresses are not updated in case of RegistryChange
-  const state = await initializeState(config);
-  // initialize status.json to make sure healthcheck passes from now on
-  writeStatusToDisk(config.StatusJsonPath, state, censoredConfig);
+  const state = initializeState(config);
+  const status = new StatusReporter(config, state);
+  // write status.json right away: the healthcheck passes from now on, and the page sees "Starting"
+  status.write('startup');
 
   for (;;) {
     try {
-      // rest (to make sure we don't retry too aggressively on exceptions)
-      await sleep(config.RunLoopPollTimeSeconds * 1000);
-
       // main business logic
-      await runLoopTick(config, state);
-
-      // write status.json file, we don't mind doing this often (2min)
-      writeStatusToDisk(config.StatusJsonPath, state, censoredConfig);
+      await runLoopTick(config, state, status);
+      state.LastTickError = '';
+      state.EthereumRpcError = '';
     } catch (err) {
       Logger.log('Exception thrown during runLoop, going back to sleep:');
-      Logger.error(err.stack);
-
-      // always write status.json file (and pass the error)
-      writeStatusToDisk(config.StatusJsonPath, state, censoredConfig, err);
+      Logger.error(describeErrorStack(err));
+      state.LastTickError = describeError(err, 300);
+      state.EthereumRpcError = classifyRpcError(err);
     }
+    state.LastTickTime = getCurrentClockTime();
+
+    // write status.json file, we don't mind doing this often (2min)
+    status.write('tick');
+
+    // rest (to make sure we don't retry too aggressively on exceptions)
+    await sleep(config.RunLoopPollTimeSeconds * 1000);
   }
 }
 
 // runs every 2 minutes in prod, 1 second in tests
-async function runLoopTick(config: Configuration, state: State) {
+async function runLoopTick(config: Configuration, state: State, status: StatusReporter) {
   Logger.log('Run loop waking up.');
+  state.SpendingLimitReason = ''; // set again below if a limit still stops a send
+
+  // retried every tick until the RPC answers; nothing can be signed before
+  if (!state.chainId) await readChainId(state);
 
   // STEP 1: read all data (io)
 
-  // is registered on netwok (polygon Ethereum)
-
   // refresh all info from management-service, we don't mind doing this often (2min)
-  await readManagementStatus(config.ManagementServiceEndpoint, config.NodeOrbsAddress, state);
-
-  // refresh all vchain reputations to prepare for vote unreadys
-  await readAllGuardiansReputations(config, state);
+  const readerUsable = await readManagementStatus(config.ManagementServiceEndpoint, config.NodeOrbsAddress, state);
+  status.onTransition('reader');
 
   // refresh pending ethereum transactions status for ready-to-sync / ready-for-comittee
+  // (txs already sent are tracked even while the reader cannot be used)
   await readPendingTransactionStatus(state.EthereumLastElectionsTx, state, config);
 
   // refresh pending ethereum transactions status for vote unreadys
@@ -73,6 +79,17 @@ async function runLoopTick(config: Configuration, state: State) {
   if (getCurrentClockTime() - state.EthereumBalanceLastPollTime > config.EthereumBalancePollTimeSeconds) {
     await readEtherBalance(config.NodeOrbsAddress, state);
   }
+
+  if (!readerUsable) {
+    // the reader says (or shows) that its data is not current: a half-synced committee, guardian list
+    // or elections status must never drive a transaction, so decide nothing until it is usable again
+    if (state.EthereumSyncStatus != 'need-reset') state.EthereumSyncStatus = 'out-of-sync';
+    status.onTransition('reader not usable');
+    return;
+  }
+
+  // refresh all vchain reputations to prepare for vote unreadys
+  await readAllGuardiansReputations(config, state);
 
   // first time update isRegistered
   if(state.isRegistered == undefined) {
@@ -87,17 +104,17 @@ async function runLoopTick(config: Configuration, state: State) {
     // isRegistered should be updated here
     // under the EthereumCanJoinCommitteeLastPollTime interval
     state.isRegistered = await isGuardianRegistered(state);
-    if (shouldCheckCanJoinCommittee(state, config)) {      
-      // dont send tx if not registered though      
+    if (shouldCheckCanJoinCommittee(state, config)) {
+      // dont send tx if not registered though
       ethereumCanJoinCommittee = await queryCanJoinCommittee(config.NodeOrbsAddress, state);
-    } 
+    }
   }
   // STEP 2: update all state machine logic (compute)
 
   // time entered topology
   const newTimeEnteredTopology = calcTimeEnteredTopology(state, config);
   if (newTimeEnteredTopology != state.TimeEnteredTopology) {
-    const logMessage = state.TimeEnteredTopology == -1 ? `Exited topology` : `Entered topology`;
+    const logMessage = newTimeEnteredTopology == -1 ? `Exited topology` : `Entered topology`;
     Logger.log(logMessage);
     state.TimeEnteredTopology = newTimeEnteredTopology;
   }
@@ -108,34 +125,52 @@ async function runLoopTick(config: Configuration, state: State) {
     Logger.log(`EthereumSyncStatus changing from ${state.EthereumSyncStatus} to ${newEthereumSyncStatus}.`);
     state.EthereumSyncStatus = newEthereumSyncStatus;
   }
+  status.onTransition('sync status');
 
   // STEP 3: write all data (io) -Yuval: Only if registered in current image's chain network
-  
+  // At most one transaction per tick: every send uses the latest nonce, so a second tx in the same
+  // tick would replace (or be rejected against) the first.
+
   // send ready-to-sync / ready-for-committee if needed, we don't mind checking this often (2min)
-  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config)) {    
+  if (shouldNotifyReadyForCommittee(state, ethereumCanJoinCommittee, config)) {
     Logger.log(`Decided to send ready-for-committee.`);
     await sendEthereumElectionsTransaction('ready-for-committee', config.NodeOrbsAddress, state, config);
-    
-  } else if (shouldNotifyReadyToSync(state, config)) {    
+    status.onTransition('ready-for-committee');
+    return;
+  } else if (shouldNotifyReadyToSync(state, config)) {
     Logger.log(`Decided to send ready-to-sync.`);
-    await sendEthereumElectionsTransaction('ready-to-sync', config.NodeOrbsAddress, state, config);    
+    await sendEthereumElectionsTransaction('ready-to-sync', config.NodeOrbsAddress, state, config);
+    status.onTransition('ready-to-sync');
+    return;
   }
 
   // send vote unready if needed, we don't mind checking this often (2min)
-  if(state.isRegistered){ 
+  if(state.isRegistered){
     const toVoteUnready = getAllGuardiansToVoteUnready(state, config);
     if (toVoteUnready.length > 0) {
       Logger.log(`Decided to send vote unreadys against validators: ${toVoteUnready.map((n) => n.EthAddress)}.`);
       await sendEthereumVoteUnreadyTransaction(toVoteUnready, config.NodeOrbsAddress, state, config);
+      status.onTransition('vote-unready');
     }
   }
 }
 
 // helpers
 
-async function initializeState(config: Configuration): Promise<State> {
+function initializeState(config: Configuration): State {
   const state = new State();
-  await initWeb3Client(config.EthereumEndpoint, config.EthereumElectionsContract, state);
+  restoreFromStatusFile(config.StatusJsonPath, state);
+  initWeb3Client(config.EthereumEndpoint, config.EthereumElectionsContract, state);
   state.signer = new Signer(config.SignerEndpoint);
   return state;
+}
+
+/** Names an Ethereum RPC failure from a web3 error, '' if the error is something else. URL-free. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function classifyRpcError(err: any): string {
+  const message = String(err?.message ?? err);
+  if (message.includes('CONNECTION ERROR')) return 'unreachable';
+  if (message.includes('CONNECTION TIMEOUT')) return 'timed out';
+  if (message.includes('Invalid JSON RPC response')) return 'invalid response';
+  return '';
 }

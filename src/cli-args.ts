@@ -38,7 +38,8 @@ export function parseArgs(argv: string[]): Configuration {
   try {
     validateConfiguration(res);
   } catch (err) {
-    Logger.error(`Invalid JSON config: '${JSON.stringify(res)}'.`);
+    // never print the config itself: it holds the RPC URL
+    Logger.error(`Invalid config: ${err.message} (config values are not printed).`);
     throw err;
   }
 

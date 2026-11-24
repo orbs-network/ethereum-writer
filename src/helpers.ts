@@ -26,6 +26,15 @@ export function getCurrentVersion() {
   return '';
 }
 
+export function getCurrentCommit() {
+  try {
+    return fs.readFileSync('./commit').toString().trim();
+  } catch (err) {
+    Logger.log(`Could not find commit: ${err.message}`);
+  }
+  return '';
+}
+
 export function getToday(): string {
   return new Date().toISOString().substr(0, 10);
 }

@@ -6,9 +6,12 @@ import {
   signAndSendTransaction,
   handlePendingTxTimeout,
   getReceiptFeeInEth,
+  SignerError,
+  SpendingLimitError,
 } from './ethereum-helpers';
 import Web3 from 'web3';
 import * as Logger from '../logger';
+import { describeError, describeErrorStack } from '../redact';
 import { getCurrentClockTime, getToday, getTenDayPeriod } from '../helpers';
 import { State, EthereumTxStatus, CommitteeMember } from '../model/state';
 import {
@@ -19,7 +22,8 @@ import {
 
 const HTTP_TIMEOUT_SEC = 20;
 
-export async function initWeb3Client(ethereumEndpoint: string, electionsContractAddress: string, state: State) {
+// no network access: safe to call before the RPC is reachable (see readChainId)
+export function initWeb3Client(ethereumEndpoint: string, electionsContractAddress: string, state: State) {
   // init web3
   state.web3 = new Web3(
     new Web3.providers.HttpProvider(ethereumEndpoint, {
@@ -30,11 +34,44 @@ export async function initWeb3Client(ethereumEndpoint: string, electionsContract
   state.web3.eth.transactionBlockTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionPollingTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionConfirmationBlocks = 1; // to stop web3 from polling pending tx
-  state.chainId = await state.web3.eth.getChainId()
-  
+
   // init contracts
   const electionsAbi = getAbiForContract(electionsContractAddress, 'elections');
   state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);  
+}
+
+export async function readChainId(state: State) {
+  if (!state.web3) throw new Error('Cannot read chain id until web3 client is initialized.');
+  const chainId = await state.web3.eth.getChainId();
+  if (!Number.isInteger(chainId) || chainId <= 0) throw new Error(`RPC returned an invalid chain id: ${chainId}.`);
+  state.chainId = chainId;
+  Logger.log(`Ethereum chain id is ${chainId}.`);
+}
+
+/**
+ * Records a send attempt that did not send. A spending-limit refusal restores the previous tx status:
+ * it is a decision not to send, and must not look like a failed send (which would switch the next
+ * attempt to the non-discount gas price). Anything else, a signer failure included, is a failed send.
+ */
+function handleSendFailure(
+  err: Error,
+  description: string,
+  previous: EthereumTxStatus | undefined,
+  current: EthereumTxStatus,
+  state: State
+): EthereumTxStatus | undefined {
+  if (err instanceof SpendingLimitError) {
+    state.SpendingLimitReason = err.message;
+    Logger.error(`Not sending ${description}: ${err.message}.`);
+    return previous;
+  }
+  if (err instanceof SignerError) {
+    state.SignerError = { Time: getCurrentClockTime(), Message: err.message };
+  }
+  Logger.error(`Failed sending ${description}: ${describeErrorStack(err)}`);
+  current.Status = 'failed-send';
+  current.Error = describeError(err, 200);
+  return current;
 }
 
 function getAbiForContract(address: string, contractName: ContractRegistryKey) {
@@ -61,6 +98,7 @@ export async function sendEthereumElectionsTransaction(
   const gasPriceStrategy = getGasPriceStrategy(state.EthereumLastElectionsTx);
   const gasPrice = await calcGasPrice(gasPriceStrategy, state, config);
 
+  const previous = state.EthereumLastElectionsTx;
   state.EthereumLastElectionsTx = {
     LastPollTime: 0,
     Type: type,
@@ -76,12 +114,11 @@ export async function sendEthereumElectionsTransaction(
     const encodedAbi = contractMethod().encodeABI() as string;
     const contractAddress = state.ethereumElectionsContract.options.address;
     const senderAddress = `0x${nodeOrbsAddress}`;
-    const txHash = await signAndSendTransaction(encodedAbi, contractAddress, senderAddress, gasPrice, state);
+    const txHash = await signAndSendTransaction(encodedAbi, contractAddress, senderAddress, gasPrice, state, config);
     state.EthereumLastElectionsTx.TxHash = txHash;
     Logger.log(`${type} transaction sent with txHash ${txHash}.`);
   } catch (err) {
-    Logger.error(`Failed sending ${type} transaction: ${err.stack}`);
-    state.EthereumLastElectionsTx.Status = 'failed-send';
+    state.EthereumLastElectionsTx = handleSendFailure(err, `${type} transaction`, previous, state.EthereumLastElectionsTx, state);
   }
 }
 
@@ -100,6 +137,7 @@ export async function sendEthereumVoteUnreadyTransaction(
   const gasPriceStrategy = getGasPriceStrategy(state.EthereumLastVoteUnreadyTx);
   const gasPrice = await calcGasPrice(gasPriceStrategy, state, config);
 
+  const previous = state.EthereumLastVoteUnreadyTx;
   state.EthereumLastVoteUnreadyTx = {
     LastPollTime: 0,
     Type: 'vote-unready',
@@ -109,7 +147,8 @@ export async function sendEthereumVoteUnreadyTransaction(
     Status: 'pending',
     TxHash: '',
     EthBlock: 0,
-    OnFinal: () => (state.EthereumLastVoteUnreadyTime[ethAddress] = state.ManagementRefTime),
+    Target: ethAddress,
+    OnFinal: voteUnreadyOnFinal(ethAddress, state),
   };
 
   // special mode to simulate vote unready without actually sending the transactions
@@ -126,13 +165,18 @@ export async function sendEthereumVoteUnreadyTransaction(
     const encodedAbi = contractMethod(ethAddressForAbi, voteExpiration).encodeABI() as string;
     const contractAddress = state.ethereumElectionsContract.options.address;
     const senderAddress = `0x${nodeOrbsAddress}`;
-    const txHash = await signAndSendTransaction(encodedAbi, contractAddress, senderAddress, gasPrice, state);
+    const txHash = await signAndSendTransaction(encodedAbi, contractAddress, senderAddress, gasPrice, state, config);
     state.EthereumLastVoteUnreadyTx.TxHash = txHash;
     Logger.log(`vote unready transaction against ${ethAddress} sent with txHash ${txHash}.`);
   } catch (err) {
-    Logger.error(`Failed sending vote unready transaction: ${err.stack}`);
-    state.EthereumLastVoteUnreadyTx.Status = 'failed-send';
+    state.EthereumLastVoteUnreadyTx = handleSendFailure(err, `vote unready transaction against ${ethAddress}`, previous, state.EthereumLastVoteUnreadyTx, state);
   }
+}
+
+export function voteUnreadyOnFinal(ethAddress: string, state: State) {
+  return () => {
+    state.EthereumLastVoteUnreadyTime[ethAddress] = state.ManagementRefTime;
+  };
 }
 
 export async function readPendingTransactionStatus(

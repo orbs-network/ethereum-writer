@@ -46,6 +46,7 @@ const mockEnv = {
   ETHEREUM_NON_DISCOUNT_TX_TIMEOUT_SECONDS: 660,
   ETHEREUM_MAX_GAS_PRICE: 1000000000,
   ETHEREUM_MAX_COMMITTED_DAILY_TX: 10,
+  ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH: 0.05,
 };
 
 test('setConfigEnvVars uses environment variables when set', (t) => {

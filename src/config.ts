@@ -26,6 +26,7 @@ export interface Configuration {
   EthereumNonDiscountTxTimeoutSeconds: number;
   EthereumMaxGasPrice: number; // in wei (below 2^54 so number is ok)
   EthereumMaxCommittedDailyTx: number;
+  EthereumMaxFeesPerTenDaysEth: number; // spending budget, enforced: no tx is sent that could exceed it
 }
 
 export const defaultConfiguration = {
@@ -49,8 +50,9 @@ export const defaultConfiguration = {
   EthereumDiscountGasPriceFactor: 0.75,
   EthereumDiscountTxTimeoutSeconds: 60 * 60,
   EthereumNonDiscountTxTimeoutSeconds: 10 * 60,
-  EthereumMaxGasPrice: 500000000000, // 500 gwei
+  EthereumMaxGasPrice: 100000000000, // 100 gwei
   EthereumMaxCommittedDailyTx: 4,
+  EthereumMaxFeesPerTenDaysEth: 0.1,
 };
 
 export function validateConfiguration(config: Configuration) {
@@ -194,5 +196,28 @@ export function validateConfiguration(config: Configuration) {
   }
   if (typeof config.EthereumMaxCommittedDailyTx != 'number') {
     throw new Error(`EthereumMaxCommittedDailyTx is not a number.`);
+  }
+  if (!config.EthereumMaxFeesPerTenDaysEth) {
+    throw new Error(`EthereumMaxFeesPerTenDaysEth is empty or zero.`);
+  }
+  if (typeof config.EthereumMaxFeesPerTenDaysEth != 'number') {
+    throw new Error(`EthereumMaxFeesPerTenDaysEth is not a number.`);
+  }
+  // these fields decide how much ETH is spent: they must be finite and positive, and the discount must not overpay
+  for (const key of [
+    'EthereumDiscountGasPriceFactor',
+    'EthereumMaxGasPrice',
+    'EthereumMaxCommittedDailyTx',
+    'EthereumMaxFeesPerTenDaysEth',
+    'EthereumDiscountTxTimeoutSeconds',
+    'EthereumNonDiscountTxTimeoutSeconds',
+    'RunLoopPollTimeSeconds',
+  ] as const) {
+    if (!Number.isFinite(config[key]) || config[key] <= 0) {
+      throw new Error(`${key} must be a positive number.`);
+    }
+  }
+  if (config.EthereumDiscountGasPriceFactor > 1) {
+    throw new Error(`EthereumDiscountGasPriceFactor must not be above 1.`);
   }
 }

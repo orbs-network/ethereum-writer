@@ -76,4 +76,7 @@ export function setConfigEnvVars(config: Configuration): void {
   config.EthereumMaxCommittedDailyTx = process.env.ETHEREUM_MAX_COMMITTED_DAILY_TX
     ? Number(process.env.ETHEREUM_MAX_COMMITTED_DAILY_TX)
     : config.EthereumMaxCommittedDailyTx;
+  config.EthereumMaxFeesPerTenDaysEth = process.env.ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH
+    ? Number(process.env.ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH)
+    : config.EthereumMaxFeesPerTenDaysEth;
 }

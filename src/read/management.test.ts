@@ -1,6 +1,6 @@
 import test from 'ava';
 import nock from 'nock';
-import { readManagementStatus, updateGuardianRegistrationContract, isGuardianRegistered } from './management';
+import { readManagementStatus, updateGuardianRegistrationContract, isGuardianRegistered, fetchManagementStatusWithTimeout } from './management';
 import { State } from '../model/state';
 import _ from 'lodash';
 import { getCurrentClockTime, jsonStringifyComplexTypes } from '../helpers';
@@ -174,7 +174,8 @@ test.serial('reads data from valid ManagementStatus', async (t) => {
   nock(exampleManagementServiceEndpoint)
     .get(managementStatusPath)
     .reply(200, JSON.stringify(validManagementStatusResponse));
-  await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
+  t.true(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'ok');
 
   t.log('state:', jsonStringifyComplexTypes(state));
 
@@ -356,17 +357,17 @@ test.serial('my elections status not found in ManagementStatus', async (t) => {
 
 test.serial('no ManagementStatus response from management service', async (t) => {
   const state = new State();
-  await t.throwsAsync(async () => {
-    await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
-  });
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'unreachable');
+  t.is(state.ManagementLastPollTime, 0);
 });
 
 test.serial('404 ManagementStatus response from management service', async (t) => {
   const state = new State();
   nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(404);
-  await t.throwsAsync(async () => {
-    await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
-  });
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'unreachable');
+  t.is(state.ReaderReason, 'HTTP 404');
 });
 
 test.serial('invalid JSON format ManagementStatus response from management service', async (t) => {
@@ -374,9 +375,8 @@ test.serial('invalid JSON format ManagementStatus response from management servi
   nock(exampleManagementServiceEndpoint)
     .get(managementStatusPath)
     .reply(200, JSON.stringify(validManagementStatusResponse) + '}}}');
-  await t.throwsAsync(async () => {
-    await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
-  });
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'invalid');
 });
 
 test.serial('partial ManagementStatus response from management service', async (t) => {
@@ -384,9 +384,102 @@ test.serial('partial ManagementStatus response from management service', async (
   const partialResponse = _.cloneDeep(validManagementStatusResponse);
   delete partialResponse.Payload.CurrentRefTime;
   nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(partialResponse));
-  await t.throwsAsync(async () => {
-    await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state);
-  });
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'invalid');
+  t.is(state.ManagementRefTime, 0);
+});
+
+// evm-reader v5.3.1 shapes
+
+function withSync(sync: object | undefined, error?: string) {
+  const res = _.cloneDeep(validManagementStatusResponse) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (sync) res.Payload.Sync = sync;
+  if (error !== undefined) res.Error = error;
+  return res;
+}
+
+const syncing = {
+  State: 'syncing',
+  Source: 'full',
+  ResumedFromBlock: null,
+  FirstBlock: 100,
+  CurrentBlock: 520,
+  TargetBlock: 1100,
+  Progress: 0.42,
+  BlocksPerSecond: 12.5,
+  EtaSeconds: 46,
+};
+
+test.serial('a syncing reader is not applied: the writer waits', async (t) => {
+  const state = new State();
+  nock(exampleManagementServiceEndpoint)
+    .get(managementStatusPath)
+    .reply(200, JSON.stringify(withSync(syncing, 'Syncing: block 520 of 1100 (42%, 46s).')));
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'syncing');
+  t.is(state.ReaderReason, 'syncing 42%');
+  // nothing from the half-synced payload reached the state
+  t.is(state.ManagementRefTime, 0);
+  t.deepEqual(state.ManagementCurrentCommittee, []);
+  t.deepEqual(state.ManagementEthToOrbsAddress, {});
+});
+
+test.serial('a syncing reader is not applied even without an Error field', async (t) => {
+  const state = new State();
+  nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(withSync(syncing)));
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'syncing');
+});
+
+test.serial('a starting reader (placeholder payload) is not applied', async (t) => {
+  const state = new State();
+  const starting = { ...syncing, Source: null, Progress: 0, TargetBlock: null };
+  const res = withSync(starting, 'Starting: state not loaded yet; committee, guardians and blocks are placeholders.');
+  delete res.Payload.CurrentContractAddress; // a placeholder payload need not even decode
+  nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(res));
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'syncing');
+  t.is(state.ReaderReason, 'starting');
+});
+
+test.serial('a synced reader with an Error is not applied', async (t) => {
+  const state = new State();
+  nock(exampleManagementServiceEndpoint)
+    .get(managementStatusPath)
+    .reply(200, JSON.stringify(withSync({ ...syncing, State: 'synced', Progress: 1 }, 'Ethereum RefTime is too old (4000 sec ago).')));
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'error');
+  t.is(state.ReaderReason, 'Ethereum RefTime is too old (4000 sec ago).');
+});
+
+test.serial('a synced, healthy reader is applied, and becomes usable again after syncing', async (t) => {
+  const state = new State();
+  nock(exampleManagementServiceEndpoint).get(managementStatusPath).reply(200, JSON.stringify(withSync(syncing)));
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  nock(exampleManagementServiceEndpoint)
+    .get(managementStatusPath)
+    .reply(200, JSON.stringify(withSync({ ...syncing, State: 'synced', Progress: 1 }, '')));
+  t.true(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'ok');
+  t.is(state.ReaderReason, '');
+  t.is(state.ManagementRefTime, 1592400033);
+});
+
+test.serial('an unknown sync state is not applied', async (t) => {
+  const state = new State();
+  nock(exampleManagementServiceEndpoint)
+    .get(managementStatusPath)
+    .reply(200, JSON.stringify(withSync({ ...syncing, State: 'paused' })));
+  t.false(await readManagementStatus(exampleManagementServiceEndpoint, myOrbsAddress, state));
+  t.is(state.ReaderStatus, 'invalid');
+});
+
+test.serial('a peer that never finishes the body times out (the timeout covers the body)', async (t) => {
+  nock(exampleManagementServiceEndpoint).get(managementStatusPath).delayBody(3000).reply(200, '{}');
+  const started = Date.now();
+  const err = await t.throwsAsync(fetchManagementStatusWithTimeout(exampleManagementServiceEndpoint + managementStatusPath, 200));
+  t.true(err.message.includes('timed out after 0.2s'));
+  t.true(Date.now() - started < 2000);
 });
 
 test.serial('GuardianRegistration::isRegistered', async (t) => {
