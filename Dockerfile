@@ -5,22 +5,27 @@ ENV NODE_ENV production
 WORKDIR /opt/orbs
 
 COPY package*.json ./
-COPY .version ./version
 
-RUN apk add --no-cache git
-
+# git is needed only to fetch one git dependency (ethereumjs-abi); python3/make/g++ only to build
+# native modules. They are removed in the same layer. npm ci installs exactly the lockfile, without
+# devDependencies, so the image runs the dependency tree that was tested.
 # see https://github.com/nodejs/docker-node/issues/282
-
-# --no-cache: download package index on-the-fly, no need to cleanup afterwards
-# --virtual: bundle packages, remove whole bundle at once, when done
 RUN apk --no-cache --virtual build-dependencies add \
+    git \
     python3 \
     make \
     g++ \
-    && npm install \
+    && npm ci --omit=dev \
+    && npm cache clean --force \
     && apk del build-dependencies
 
-RUN npm install
+# written by boyar/create-version-file.sh (npm run build), published as Payload.Version
+COPY .version ./version
+COPY .commit ./commit
+
+# docker-compose runs `node healthcheck.js` from /opt/orbs
+COPY boyar/healthcheck.js ./healthcheck.js
+HEALTHCHECK CMD node healthcheck.js || exit 1
 
 COPY dist ./dist
 
