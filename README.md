@@ -35,12 +35,30 @@ The service is packaged as a Docker image. It is routinely published from this r
 | `InvalidReputationGraceSeconds` | Time validator needs to have invalid reputation for vote unready to be sent, `INVALID_REPUTATION_GRACE` in the spec.<br>Default: `108000` (30 hours) |
 | `VoteUnreadyValiditySeconds` | How often vote outs should be resent against the same validator, `VOTEOUT_VALIDAITY` in the spec.<br>Default: `604800` (7 days) |
 | `ElectionsAuditOnly` | Whether the node is audit only and should avoid joining the committee as elected validator and remain standby in the topology instead.<br>Default: `false` |
-| `SuspendVoteUnready` | Should the node avoid sending actual vote-unready transactions to Ethereum and instead just log the intent.<br>Default: `false` |
+| `SuspendVoteUnready` | Should the node avoid sending actual vote-unready transactions to Ethereum and instead just log the intent.<br>Default: `true` |
 | `EthereumDiscountGasPriceFactor` | When trying to send transactions to Ethereum, the first attempt tries to reduce the recommended gas price and send under a discount.<br>Default: `0.75` |
 | `EthereumDiscountTxTimeoutSeconds` | On the first attempt of sending transactions to Ethereum under discount, how long to wait before considering the transaction timed out.<br>Default: `3600` (1 hour) |
 | `EthereumNonDiscountTxTimeoutSeconds` | On the following attempts of sending transactions to Ethereum without discount, how long to wait before considering the transaction timed out.<br>Default: `600` (10 minutes) |
-| `EthereumMaxGasPrice` | What is the maximum gas price that will be used for sending transactions to Ethereum.<br>Default: `500000000000` (500 gwei) |
-| `EthereumMaxCommittedDailyTx` | The maximum allowed number of transactions sent to Ethereum in one day (actually committed, could be either successful or reverted). This protects against bugs that may cause too many transactions to be sent and Ether balance to drain.<br>Default: `4` |
+| `EthereumMaxGasPrice` | What is the maximum gas price that will be used for sending transactions to Ethereum (a higher recommended price is clamped to it).<br>Default: `100000000000` (100 gwei) |
+| `EthereumMaxCommittedDailyTx` | The maximum number of transactions mined from the guardian address in one UTC day (successful or reverted), counted from the account nonce, so txs mined after a timeout or sent by anyone else with the same key count too. This protects against bugs that may cause too many transactions to be sent and Ether balance to drain.<br>Default: `4` |
+| `EthereumMaxFeesPerTenDaysEth` | Spending budget in ETH per 10-day period. A transaction is not signed if its worst-case fee (gas limit x gas price) could take the period's fees above it.<br>Default: `0.1` |
+
+Every field can also be set by an environment variable with the same name in `UPPER_SNAKE_CASE` (for example `ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH`); `NodeOrbsAddress` is `NODE_ADDRESS`. On v5 nodes the config comes from environment variables only.
+
+The spending counters (daily txs, fees, the first nonce of the day) and a transaction still in flight are restored from the previous `status.json` on startup, so a restart does not reset the limits. The service never reads a private key: all signing goes through `SignerEndpoint`.
+
+### Status (`status.json`)
+
+`status.json` is public on v5 nodes. It never contains the RPC URL: `Payload.Config` is an allowlist (`src/public-config.ts`) and the whole file, like all log output, is scrubbed of every part of `EthereumEndpoint` (`src/redact.ts`).
+
+| Field | Meaning |
+| ----- | ------- |
+| `Status` | One-line summary, most important first: `Starting`, `Operational`, `Tx pending: …`, `Blocked by <component>: <reason>`, `Spending limit reached`, `Out of sync` or `Needs reset`, then balance and fees. |
+| `Error` | Empty only when healthy. Anything the service cannot vouch for (starting, reader not usable, balance unknown, a failed tick) is an error. |
+| `Timestamp` | ISO time of the write. Written on startup, after every run loop tick and on state transitions. The healthcheck fails if it is older than 20 minutes. |
+| `Payload.Uptime`, `Payload.Version {Semantic, Commit}`, `Payload.MemoryUsage` | Process facts. |
+| `Payload.BlockedBy {Component, Reason}` | Set when the error is downstream of another component: `ethereum-reader` (starting, syncing, erroring, unreachable or stale), `signer` or `ethereum-rpc`. |
+| `Payload.Reader {Status, Reason}` | Whether the reader's last status could be acted on. While the reader reports `Payload.Sync.State = "syncing"` or a non-empty `Error`, the writer applies none of its data and decides no transactions. |
 
 ## Developer instructions
 
