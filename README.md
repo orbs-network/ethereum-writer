@@ -72,7 +72,7 @@ The spending counters (daily txs, fees, the first nonce of the day) and a transa
 
   * Recommended extensions [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint), [Prettier - code Formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode).
 
-* [Docker](https://www.docker.com/) is required for running E2E tests.
+* [Docker](https://www.docker.com/) is required for building the image.
 
   * Install [here](https://docs.docker.com/install/), check version with `docker -v`.
 

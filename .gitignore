@@ -66,5 +66,5 @@ typings/
 
 # next.js build output
 .next
-# written by boyar/create-version-file.sh
+# written by scripts/create-version-file.sh
 .commit
