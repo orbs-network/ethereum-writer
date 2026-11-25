@@ -19,12 +19,12 @@ RUN apk --no-cache --virtual build-dependencies add \
     && npm cache clean --force \
     && apk del build-dependencies
 
-# written by boyar/create-version-file.sh (npm run build), published as Payload.Version
+# written by scripts/create-version-file.sh (npm run build), published as Payload.Version
 COPY .version ./version
 COPY .commit ./commit
 
 # docker-compose runs `node healthcheck.js` from /opt/orbs
-COPY boyar/healthcheck.js ./healthcheck.js
+COPY healthcheck.js ./healthcheck.js
 HEALTHCHECK CMD node healthcheck.js || exit 1
 
 COPY dist ./dist

@@ -115,20 +115,6 @@ The spending counters (daily txs, fees, the first nonce of the day) and a transa
   npm run test:quick -- src/config.test.ts
   ```
 
-* For E2E tests (on docker), run in terminal in root project directory:
-
-  ```
-  npm run build
-  npm run test:e2e
-  ```
-
-  * Note: running E2E locally may leave docker residues:
-
-    * See which instances are running with `docker ps`, stop all with `docker stop $(docker ps -a -q)`
-
-    * See which images exist with `docker images`, delete all relevant with `docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'cicontainer')`
-
-
 ### Matic-writer - Polygon
 
 The code has been updated to add EVM write capabilities for Polygon network, as well as Ethereum in order to support polygon proof of stake functionality as of March 29 2022.

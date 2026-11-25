@@ -46,7 +46,7 @@ jobs:
           node-version: 16
       - name: setup-docker
         uses: docker-practice/actions-setup-docker@master
-      - run: ./boyar/create-version-file.sh
+      - run: ./scripts/create-version-file.sh
       - name: Run npm install
         run: npm install
       - run: ./boyar/docker-build.sh
