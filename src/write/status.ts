@@ -22,7 +22,7 @@ export interface BlockedBy {
 // NOTE: status.json is public on v5 nodes (nginx serves it at /service/ethereum-writer/status).
 // Never put the raw config, an RPC URL or an unscrubbed error in it.
 export function renderStatus(state: State, config: Configuration): JsonResponse {
-  const blockedBy = getBlockedBy(state);
+  const blockedBy = getBlockedBy(state, config);
   return {
     Status: getStatusText(state, blockedBy),
     Error: getErrorText(state, config, blockedBy),
@@ -103,7 +103,7 @@ export class StatusReporter {
   write(why: string) {
     try {
       writeStatusToDisk(this.config.StatusJsonPath, this.state, this.config, why);
-      this.lastKey = transitionKey(this.state);
+      this.lastKey = transitionKey(this.state, this.config);
     } catch (err) {
       // a failed status write must not stop the run loop; the healthcheck will notice a stale file
       Logger.error(`Failed writing status JSON: ${describeError(err)}`);
@@ -111,11 +111,11 @@ export class StatusReporter {
   }
 
   onTransition(why: string) {
-    if (transitionKey(this.state) !== this.lastKey) this.write(`transition: ${why}`);
+    if (transitionKey(this.state, this.config) !== this.lastKey) this.write(`transition: ${why}`);
   }
 }
 
-function transitionKey(state: State): string {
+function transitionKey(state: State, config: Configuration): string {
   return JSON.stringify([
     state.ReaderStatus,
     state.EthereumSyncStatus,
@@ -126,7 +126,8 @@ function transitionKey(state: State): string {
     state.SpendingLimitReason,
     !!state.SignerError,
     state.EthereumRpcError,
-    getBlockedBy(state)?.Component,
+    getBlockedBy(state, config)?.Component,
+    state.ChainCheckError,
   ]);
 }
 
@@ -214,12 +215,17 @@ function keepLatest(record: { [key: string]: number }, count: number) {
   return out;
 }
 
-export function getBlockedBy(state: State): BlockedBy | undefined {
+export function getBlockedBy(state: State, config: Pick<Configuration, 'EthereumSyncRequirementSeconds'>): BlockedBy | undefined {
   if (state.ReaderStatus !== 'ok' && state.ReaderStatus !== 'unknown') {
     return { Component: 'ethereum-reader', Reason: state.ReaderReason || state.ReaderStatus };
   }
-  if (state.ReaderStatus === 'ok' && state.EthereumSyncStatus === 'out-of-sync' && state.ManagementRefTime > 0) {
-    return { Component: 'ethereum-reader', Reason: `RefTime ${getCurrentClockTime() - state.ManagementRefTime}s old` };
+  // only when the reader's data really is too old: 'out-of-sync' is also the state before the first full tick
+  const refTimeAge = getCurrentClockTime() - state.ManagementRefTime;
+  if (state.ReaderStatus === 'ok' && state.ManagementRefTime > 0 && refTimeAge > config.EthereumSyncRequirementSeconds) {
+    return { Component: 'ethereum-reader', Reason: `RefTime ${refTimeAge}s old` };
+  }
+  if (state.ChainCheckError) {
+    return { Component: 'ethereum-rpc', Reason: state.ChainCheckError };
   }
   if (state.SignerError) {
     return { Component: 'signer', Reason: state.SignerError.Message };

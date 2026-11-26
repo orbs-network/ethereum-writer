@@ -154,12 +154,28 @@ test.serial('a stale reader RefTime is reported as BlockedBy ethereum-reader', (
   t.true(status.Payload.BlockedBy.Reason.startsWith('RefTime 3'));
 });
 
+test.serial('a fresh reader is not blamed while the writer is still out-of-sync after a restart', (t) => {
+  const state = healthyState();
+  state.EthereumSyncStatus = 'out-of-sync'; // the initial state, before a full tick
+  state.ManagementRefTime = getCurrentClockTime() - 536;
+  t.is(renderStatus(state, exampleConfig).Payload.BlockedBy, undefined);
+});
+
 test.serial('a signer failure is reported as BlockedBy signer', (t) => {
   const state = healthyState();
   state.SignerError = { Time: getCurrentClockTime(), Message: 'signer failed: Bad response: Not Found' };
   const status = renderStatus(state, exampleConfig);
   t.deepEqual(status.Payload.BlockedBy, { Component: 'signer', Reason: 'signer failed: Bad response: Not Found' });
   t.not(status.Error, '');
+});
+
+test.serial('a failed chain check is reported as BlockedBy ethereum-rpc, with the reason', (t) => {
+  const state = healthyState();
+  state.ChainCheckError = 'chain id mismatch: RPC reports 11155111, expected 1';
+  const status = renderStatus(state, exampleConfig);
+  t.deepEqual(status.Payload.BlockedBy, { Component: 'ethereum-rpc', Reason: 'chain id mismatch: RPC reports 11155111, expected 1' });
+  t.true(status.Error.includes('chain id mismatch'));
+  t.is(status.Payload.Config.EthereumChainId, 1);
 });
 
 test.serial('an RPC failure is reported as BlockedBy ethereum-rpc', (t) => {

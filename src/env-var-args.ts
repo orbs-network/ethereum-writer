@@ -79,4 +79,5 @@ export function setConfigEnvVars(config: Configuration): void {
   config.EthereumMaxFeesPerTenDaysEth = process.env.ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH
     ? Number(process.env.ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH)
     : config.EthereumMaxFeesPerTenDaysEth;
+  config.EthereumChainId = process.env.ETHEREUM_CHAIN_ID ? Number(process.env.ETHEREUM_CHAIN_ID) : config.EthereumChainId;
 }

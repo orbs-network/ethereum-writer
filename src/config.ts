@@ -27,6 +27,7 @@ export interface Configuration {
   EthereumMaxGasPrice: number; // in wei (below 2^54 so number is ok)
   EthereumMaxCommittedDailyTx: number;
   EthereumMaxFeesPerTenDaysEth: number; // spending budget, enforced: no tx is sent that could exceed it
+  EthereumChainId: number; // nothing is signed unless the RPC reports this chain id
 }
 
 export const defaultConfiguration = {
@@ -53,6 +54,7 @@ export const defaultConfiguration = {
   EthereumMaxGasPrice: 100000000000, // 100 gwei
   EthereumMaxCommittedDailyTx: 4,
   EthereumMaxFeesPerTenDaysEth: 0.1,
+  EthereumChainId: 1, // Ethereum mainnet
 };
 
 export function validateConfiguration(config: Configuration) {
@@ -202,6 +204,9 @@ export function validateConfiguration(config: Configuration) {
   }
   if (typeof config.EthereumMaxFeesPerTenDaysEth != 'number') {
     throw new Error(`EthereumMaxFeesPerTenDaysEth is not a number.`);
+  }
+  if (!Number.isInteger(config.EthereumChainId) || config.EthereumChainId <= 0) {
+    throw new Error(`EthereumChainId must be a positive integer.`);
   }
   // these fields decide how much ETH is spent: they must be finite and positive, and the discount must not overpay
   for (const key of [

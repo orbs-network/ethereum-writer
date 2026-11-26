@@ -1,7 +1,7 @@
 import test from 'ava';
 import {
   initWeb3Client,
-  readChainId,
+  verifyChain,
   sendEthereumElectionsTransaction,
   sendEthereumVoteUnreadyTransaction,
   readPendingTransactionStatus,
@@ -18,19 +18,85 @@ import { getReceiptFeeInEth } from './ethereum-helpers';
 import nock from 'nock';
 
 
-test('initializes web3 and contracts', async (t) => {
+test('initializes web3 and contracts, and verifies the chain against a real RPC answer', async (t) => {
   const state = new State();
 
   nock(/ganache/)
     .post(/.*/, /eth_chainId/)
-    .reply(200, JSON.stringify({"jsonrpc":"2.0","id":1,"result":"0x1"}));
+    .reply(200, JSON.stringify({"jsonrpc":"2.0","id":1,"result":"0x1"}))
+    .post(/.*/, /eth_getCode/)
+    .reply(200, JSON.stringify({"jsonrpc":"2.0","id":2,"result":"0x6080604052"}));
 
   initWeb3Client('http://ganache:7545/', '0xf8B352100dE45D2668768290504DC89e85766E02', state);
   t.assert(state.web3);
   t.assert(state.ethereumElectionsContract);
-  t.is(state.chainId, 0); // nothing is read until readChainId
-  await readChainId(state);
+  t.is(state.chainId, 0); // nothing is read until verifyChain
+  t.true(await verifyChain(state, 1, '0xf8B352100dE45D2668768290504DC89e85766E02'));
   t.is(state.chainId, 1);
+});
+
+// a web3 stand-in for the chain check: a settable chain id and Elections code, counting getCode calls
+function chainRpc(chainId: number, code = '0x6080604052') {
+  const rpc = {
+    chainId,
+    code,
+    getCodeCalls: 0,
+    eth: {
+      getChainId: async () => {
+        await sleep(0);
+        return rpc.chainId;
+      },
+      getCode: async () => {
+        await sleep(0);
+        rpc.getCodeCalls++;
+        return rpc.code;
+      },
+    },
+  };
+  return rpc;
+}
+
+test('verifyChain passes on the expected chain and checks the Elections code only once', async (t) => {
+  const state = new State();
+  const rpc = chainRpc(1);
+  state.web3 = (rpc as unknown) as Web3;
+  t.true(await verifyChain(state, 1, '0xelections'));
+  t.true(await verifyChain(state, 1, '0xelections'));
+  t.is(state.chainId, 1);
+  t.is(state.ChainCheckError, '');
+  t.is(rpc.getCodeCalls, 1);
+});
+
+test('verifyChain blocks signing on another chain, and recovers when the RPC is fixed', async (t) => {
+  const state = new State();
+  const rpc = chainRpc(1);
+  state.web3 = (rpc as unknown) as Web3;
+  t.true(await verifyChain(state, 1, '0xelections'));
+
+  rpc.chainId = 11155111; // the endpoint now serves Sepolia
+  t.false(await verifyChain(state, 1, '0xelections'));
+  t.is(state.chainId, 0);
+  t.is(state.ChainCheckError, 'chain id mismatch: RPC reports 11155111, expected 1');
+
+  rpc.chainId = 1;
+  t.true(await verifyChain(state, 1, '0xelections'));
+  t.is(state.chainId, 1);
+  t.is(state.ChainCheckError, '');
+  t.is(rpc.getCodeCalls, 2); // checked again after the mismatch
+});
+
+test('verifyChain blocks signing when the Elections contract has no code on this RPC', async (t) => {
+  const state = new State();
+  state.web3 = (chainRpc(1, '0x') as unknown) as Web3;
+  t.false(await verifyChain(state, 1, '0xelections'));
+  t.is(state.chainId, 0);
+  t.is(state.ChainCheckError, 'no contract code at the Elections address 0xelections on this RPC');
+});
+
+test('verifyChain throws on a nonsense chain id', async (t) => {
+  const state = new State();
+  state.web3 = (chainRpc(0) as unknown) as Web3;
+  await t.throwsAsync(() => verifyChain(state, 1, '0xelections'), { message: /invalid chain id/ });
 });
 
 // a state that already read its chain id from the RPC
@@ -40,9 +106,13 @@ function newState() {
   return state;
 }
 
-function getMockWeb3Client(behavior: 'success' | 'badsend' | 'pending' | 'revert' | 'removed' | 'overmax' = 'success') {
+function getMockWeb3Client(behavior: 'success' | 'badsend' | 'pending' | 'revert' | 'removed' | 'overmax' | 'otherchain' = 'success') {
   return ({
     eth: {
+      getChainId: async () => {
+        await sleep(0);
+        return behavior == 'otherchain' ? 137 : 1;
+      },
       getTransactionCount: async () => {
         await sleep(0);
         return 17;
@@ -570,4 +640,17 @@ test('queryCanJoinCommittee works', async (t) => {
   state.ethereumElectionsContract = getMockElectionsContract();
 
   t.is(await queryCanJoinCommittee(exampleConfig.NodeOrbsAddress, state), true);
+});
+test('the chain is checked again right before signing: a switched RPC signs nothing and keeps the previous tx', async (t) => {
+  const state = newState();
+  state.web3 = getMockWeb3Client('otherchain');
+  let signed = false;
+  state.signer = ({ sign: async () => { await sleep(0); signed = true; return {}; } } as unknown) as Signer;
+  state.ethereumElectionsContract = getMockElectionsContract();
+  await sendEthereumElectionsTransaction('ready-to-sync', 'sender', state, exampleConfig);
+
+  t.false(signed);
+  t.is(state.EthereumLastElectionsTx, undefined); // nothing was sent, so no new tx status
+  t.is(state.chainId, 0);
+  t.is(state.ChainCheckError, 'chain id mismatch: RPC reports 137, expected 1');
 });

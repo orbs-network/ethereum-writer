@@ -69,7 +69,9 @@ test.serial('a real web3 call through the provider is recorded and shows in stat
   const state = new State();
   initWeb3Client(fakeRpc, exampleConfig.EthereumElectionsContract, state);
   nock(fakeRpc).post('/').reply(429, 'Too Many Requests');
-  await t.throwsAsync(() => state.web3!.eth.getBalance('0x0000000000000000000000000000000000000001'));
+  const web3 = state.web3;
+  if (!web3) return t.fail('web3 not initialized');
+  await t.throwsAsync(() => web3.eth.getBalance('0x0000000000000000000000000000000000000001'));
 
   const sync = renderStatus(state, exampleConfig).Payload.EthereumSync;
   t.deepEqual(sync.RpcErrorsLastHour, { Timeout: 0, RangeLimit: 0, RateLimit: 1, Other: 0 });

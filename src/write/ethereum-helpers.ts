@@ -17,12 +17,20 @@ export interface EthereumTxParams {
   EthereumMaxGasPrice: number;
   EthereumMaxCommittedDailyTx: number;
   EthereumMaxFeesPerTenDaysEth: number;
+  EthereumChainId: number;
   VoteUnreadyValiditySeconds: number;
   SuspendVoteUnready: boolean;
 }
 
 /** A spending limit stopped the tx before it was signed: nothing was sent. */
 export class SpendingLimitError extends Error {}
+
+/** The RPC is not on the expected chain: nothing was signed. */
+export class ChainCheckError extends Error {}
+
+export function chainMismatchReason(rpcChainId: number, expectedChainId: number) {
+  return `chain id mismatch: RPC reports ${rpcChainId}, expected ${expectedChainId}`;
+}
 
 /** The signer service failed or refused: nothing was sent. */
 export class SignerError extends Error {}
@@ -97,6 +105,12 @@ export async function signAndSendTransaction(
   if (!state.web3) throw new Error('Cannot send tx until web3 client is initialized.');
   if (!state.signer) throw new Error('Cannot send tx until signer is initialized.');
   if (!state.chainId) throw new Error('Cannot send tx until the chain id is known.');
+
+  // checked again right before signing: the RPC behind the same URL can change between ticks
+  const rpcChainId = Number(await state.web3.eth.getChainId());
+  if (rpcChainId !== config.EthereumChainId || rpcChainId !== state.chainId) {
+    throw new ChainCheckError(chainMismatchReason(rpcChainId, config.EthereumChainId));
+  }
 
   // 'latest' ignores the pending pool on purpose: at most one tx is in flight, and a resend after a
   // timeout must reuse its nonce so that it replaces the stuck tx instead of queueing behind it

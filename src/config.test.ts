@@ -34,3 +34,10 @@ test('validateConfiguration fails when string given instead of number', (t) => {
   invalidConfig.RunLoopPollTimeSeconds = '99'; // as string
   t.throws(() => validateConfiguration(invalidConfig));
 });
+
+test('validateConfiguration fails on an invalid EthereumChainId', (t) => {
+  for (const bad of [0, -1, 1.5, NaN]) {
+    t.throws(() => validateConfiguration({ ..._.cloneDeep(exampleConfig), EthereumChainId: bad }));
+  }
+  t.notThrows(() => validateConfiguration({ ..._.cloneDeep(exampleConfig), EthereumChainId: 137 }));
+});

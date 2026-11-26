@@ -29,4 +29,5 @@ export const exampleConfig: Configuration = {
   EthereumMaxGasPrice: 150000000000, // 150 gwei
   EthereumMaxCommittedDailyTx: 4,
   EthereumMaxFeesPerTenDaysEth: 0.1,
+  EthereumChainId: 1,
 };

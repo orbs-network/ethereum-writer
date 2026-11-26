@@ -8,6 +8,8 @@ import {
   getReceiptFeeInEth,
   SignerError,
   SpendingLimitError,
+  ChainCheckError,
+  chainMismatchReason,
 } from './ethereum-helpers';
 import Web3 from 'web3';
 import { recordProviderErrors } from './rpc-errors';
@@ -41,12 +43,38 @@ export function initWeb3Client(ethereumEndpoint: string, electionsContractAddres
   state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);  
 }
 
-export async function readChainId(state: State) {
-  if (!state.web3) throw new Error('Cannot read chain id until web3 client is initialized.');
-  const chainId = await state.web3.eth.getChainId();
+/**
+ * Checks that the RPC is on the expected chain before anything is signed: its chain id must equal
+ * config.EthereumChainId, and (once per verified chain) the Elections contract must have code there.
+ * On a mismatch state.chainId is cleared, so nothing can be signed, and state.ChainCheckError says why.
+ * Throws only when the RPC fails or answers nonsense.
+ */
+export async function verifyChain(state: State, expectedChainId: number, electionsContractAddress: string): Promise<boolean> {
+  if (!state.web3) throw new Error('Cannot verify the chain until web3 client is initialized.');
+  const chainId = Number(await state.web3.eth.getChainId());
   if (!Number.isInteger(chainId) || chainId <= 0) throw new Error(`RPC returned an invalid chain id: ${chainId}.`);
+  if (chainId !== expectedChainId) return chainCheckFailed(state, chainMismatchReason(chainId, expectedChainId));
+
+  if (!state.ElectionsCodeVerified) {
+    const code = await state.web3.eth.getCode(electionsContractAddress);
+    if (!code || /^0x0*$/i.test(code)) {
+      return chainCheckFailed(state, `no contract code at the Elections address ${electionsContractAddress} on this RPC`);
+    }
+    state.ElectionsCodeVerified = true;
+  }
+
+  if (state.chainId !== chainId) Logger.log(`Ethereum chain id ${chainId} verified, Elections contract found.`);
   state.chainId = chainId;
-  Logger.log(`Ethereum chain id is ${chainId}.`);
+  state.ChainCheckError = '';
+  return true;
+}
+
+function chainCheckFailed(state: State, reason: string): false {
+  if (state.ChainCheckError !== reason) Logger.error(`Not signing anything: ${reason}.`);
+  state.chainId = 0;
+  state.ElectionsCodeVerified = false;
+  state.ChainCheckError = reason;
+  return false;
 }
 
 /**
@@ -63,6 +91,14 @@ function handleSendFailure(
 ): EthereumTxStatus | undefined {
   if (err instanceof SpendingLimitError) {
     state.SpendingLimitReason = err.message;
+    Logger.error(`Not sending ${description}: ${err.message}.`);
+    return previous;
+  }
+  if (err instanceof ChainCheckError) {
+    // nothing was signed: block signing until the next tick verifies the chain again
+    state.ChainCheckError = err.message;
+    state.chainId = 0;
+    state.ElectionsCodeVerified = false;
     Logger.error(`Not sending ${description}: ${err.message}.`);
     return previous;
   }

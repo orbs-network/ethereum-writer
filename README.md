@@ -42,6 +42,7 @@ The service is packaged as a Docker image. It is routinely published from this r
 | `EthereumMaxGasPrice` | What is the maximum gas price that will be used for sending transactions to Ethereum (a higher recommended price is clamped to it).<br>Default: `100000000000` (100 gwei) |
 | `EthereumMaxCommittedDailyTx` | The maximum number of transactions mined from the guardian address in one UTC day (successful or reverted), counted from the account nonce, so txs mined after a timeout or sent by anyone else with the same key count too. This protects against bugs that may cause too many transactions to be sent and Ether balance to drain.<br>Default: `4` |
 | `EthereumMaxFeesPerTenDaysEth` | Spending budget in ETH per 10-day period. A transaction is not signed if its worst-case fee (gas limit x gas price) could take the period's fees above it.<br>Default: `0.1` |
+| `EthereumChainId` | Chain id the RPC must report. Checked every run loop tick and again right before signing; on the first match the Elections contract must also have code on the RPC. On a mismatch nothing is read from the RPC or signed, and status shows `BlockedBy ethereum-rpc` with the reason until it matches again.<br>Default: `1` (Ethereum mainnet), env `ETHEREUM_CHAIN_ID` |
 
 Every field can also be set by an environment variable with the same name in `UPPER_SNAKE_CASE` (for example `ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH`); `NodeOrbsAddress` is `NODE_ADDRESS`. On v5 nodes the config comes from environment variables only.
 

@@ -78,7 +78,9 @@ export class State {
   orbsAccount = Orbs.createAccount();
   orbsClientPerVchain: { [VirtualChainId: string]: Orbs.Client } = {};
 
-  chainId = 0; // read from the RPC on startup; 0 = unknown, nothing is signed until it is known
+  chainId = 0; // verified against config.EthereumChainId every tick; 0 = not verified, nothing is signed
+  ChainCheckError = ''; // why the RPC failed the chain check ('' when it passed)
+  ElectionsCodeVerified = false; // the Elections contract has code on this RPC (checked once per verified chain)
   isRegistered:boolean|undefined = undefined;
 }
 

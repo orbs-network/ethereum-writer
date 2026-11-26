@@ -18,7 +18,7 @@ import Signer from 'orbs-signer-client';
 import {
   initWeb3Client,
   queryCanJoinCommittee,
-  readChainId,
+  verifyChain,
   readEtherBalance,
   readPendingTransactionStatus,
   sendEthereumElectionsTransaction,
@@ -59,14 +59,16 @@ async function runLoopTick(config: Configuration, state: State, status: StatusRe
   Logger.log('Run loop waking up.');
   state.SpendingLimitReason = ''; // set again below if a limit still stops a send
 
-  // retried every tick until the RPC answers; nothing can be signed before
-  if (!state.chainId) await readChainId(state);
-
   // STEP 1: read all data (io)
 
   // refresh all info from management-service, we don't mind doing this often (2min)
   const readerUsable = await readManagementStatus(config.ManagementServiceEndpoint, config.NodeOrbsAddress, state);
   status.onTransition('reader');
+
+  // the RPC must be on the expected chain before anything is read from it or signed for it
+  const chainOk = await verifyChain(state, config.EthereumChainId, config.EthereumElectionsContract);
+  status.onTransition('chain check');
+  if (!chainOk) return;
 
   // refresh pending ethereum transactions status for ready-to-sync / ready-for-comittee
   // (txs already sent are tracked even while the reader cannot be used)

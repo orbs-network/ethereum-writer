@@ -28,6 +28,7 @@ const PUBLIC_FIELDS = [
   'EthereumMaxGasPrice',
   'EthereumMaxCommittedDailyTx',
   'EthereumMaxFeesPerTenDaysEth',
+  'EthereumChainId',
 ] as const;
 
 export type PublicConfig = Partial<Pick<Configuration, typeof PUBLIC_FIELDS[number]>> & {
