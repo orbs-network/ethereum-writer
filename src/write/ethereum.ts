@@ -10,6 +10,7 @@ import {
   SpendingLimitError,
 } from './ethereum-helpers';
 import Web3 from 'web3';
+import { recordProviderErrors } from './rpc-errors';
 import * as Logger from '../logger';
 import { describeError, describeErrorStack } from '../redact';
 import { getCurrentClockTime, getToday, getTenDayPeriod } from '../helpers';
@@ -25,12 +26,12 @@ const HTTP_TIMEOUT_SEC = 20;
 // no network access: safe to call before the RPC is reachable (see readChainId)
 export function initWeb3Client(ethereumEndpoint: string, electionsContractAddress: string, state: State) {
   // init web3
-  state.web3 = new Web3(
-    new Web3.providers.HttpProvider(ethereumEndpoint, {
-      keepAlive: true,
-      timeout: HTTP_TIMEOUT_SEC * 1000,
-    })
-  );
+  const provider = new Web3.providers.HttpProvider(ethereumEndpoint, {
+    keepAlive: true,
+    timeout: HTTP_TIMEOUT_SEC * 1000,
+  });
+  recordProviderErrors(provider, state.RpcErrors);
+  state.web3 = new Web3(provider);
   state.web3.eth.transactionBlockTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionPollingTimeout = 0; // to stop web3 from polling pending tx
   state.web3.eth.transactionConfirmationBlocks = 1; // to stop web3 from polling pending tx

@@ -59,6 +59,7 @@ The spending counters (daily txs, fees, the first nonce of the day) and a transa
 | `Payload.Uptime`, `Payload.Version {Semantic, Commit}`, `Payload.MemoryUsage` | Process facts. |
 | `Payload.BlockedBy {Component, Reason}` | Set when the error is downstream of another component: `ethereum-reader` (starting, syncing, erroring, unreachable or stale), `signer` or `ethereum-rpc`. |
 | `Payload.Reader {Status, Reason}` | Whether the reader's last status could be acted on. While the reader reports `Payload.Sync.State = "syncing"` or a non-empty `Error`, the writer applies none of its data and decides no transactions. |
+| `Payload.EthereumSync {LastRpcErrorAt, LastRpcError, RpcErrorsLastHour}` | Every failed Ethereum RPC call, same fields as evm-reader: unix seconds and URL-free text of the last one (kept after later successes), and counts over the last hour as `{Timeout, RangeLimit, RateLimit, Other}` (`RangeLimit` is always 0 here). |
 
 ## Developer instructions
 

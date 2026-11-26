@@ -1,5 +1,6 @@
 import Web3 from 'web3';
 import { Contract } from 'web3-eth-contract';
+import { RpcErrorLog } from '../write/rpc-errors';
 import * as Orbs from 'orbs-client-sdk';
 import { getCurrentClockTime, getCurrentVersion, getCurrentCommit } from '../helpers';
 import Signer from 'orbs-signer-client';
@@ -49,6 +50,8 @@ export class State {
   SpendingLimitReason = ''; // set while a spending limit stops sends
   SignerError?: { Time: number; Message: string }; // last signer failure, cleared on a successful signature
   EthereumRpcError = ''; // last Ethereum RPC failure, cleared on a successful tick
+  // every failed RPC call, kept after later successes (published as Payload.EthereumSync)
+  RpcErrors = new RpcErrorLog();
 
   // updated by index.ts (run loop)
   LastTickTime = 0; // UTC seconds of the last completed tick, 0 before the first

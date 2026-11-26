@@ -42,6 +42,12 @@ export function renderStatus(state: State, config: Configuration): JsonResponse 
       LastTickTime: state.LastTickTime,
       EthereumSyncStatus: state.EthereumSyncStatus,
       EthereumChainId: state.chainId,
+      // same fields as evm-reader's Payload.EthereumSync
+      EthereumSync: {
+        LastRpcErrorAt: Math.round(state.RpcErrors.lastAt() / 1000),
+        LastRpcError: state.RpcErrors.last(),
+        RpcErrorsLastHour: state.RpcErrors.counts(),
+      },
       EthereumBalanceLastPollTime: state.EthereumBalanceLastPollTime,
       EtherBalance: state.EtherBalance,
       EthereumCanJoinCommitteeLastPollTime: state.EthereumCanJoinCommitteeLastPollTime,
