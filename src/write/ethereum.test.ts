@@ -14,7 +14,7 @@ import { sleep, getCurrentClockTime, getToday, getTenDayPeriod } from '../helper
 import Signer from 'orbs-signer-client';
 import { exampleConfig } from '../config.example';
 import { TransactionReceipt } from 'web3-core';
-import { getReceiptFeeInEth } from './ethereum-helpers';
+import { getReceiptFeeInEth, dailyLimitReachedReason } from './ethereum-helpers';
 import nock from 'nock';
 
 
@@ -653,4 +653,18 @@ test('the chain is checked again right before signing: a switched RPC signs noth
   t.is(state.EthereumLastElectionsTx, undefined); // nothing was sent, so no new tx status
   t.is(state.chainId, 0);
   t.is(state.ChainCheckError, 'chain id mismatch: RPC reports 137, expected 1');
+});
+
+test('a reached daily limit is reported even when no tx is due', (t) => {
+  const state = newState();
+  t.is(dailyLimitReachedReason(state, exampleConfig), '');
+  state.EthereumCommittedTxStats[getToday()] = exampleConfig.EthereumMaxCommittedDailyTx - 1;
+  t.is(dailyLimitReachedReason(state, exampleConfig), '');
+  state.EthereumCommittedTxStats[getToday()] = exampleConfig.EthereumMaxCommittedDailyTx;
+  t.is(
+    dailyLimitReachedReason(state, exampleConfig),
+    'daily tx limit reached: 4 txs committed today (max 4), nothing is sent until the next UTC day'
+  );
+  state.EthereumCommittedTxStats = { '2000-01-01': 9 }; // other days do not count
+  t.is(dailyLimitReachedReason(state, exampleConfig), '');
 });

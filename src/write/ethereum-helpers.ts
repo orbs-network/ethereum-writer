@@ -63,6 +63,17 @@ export async function calcGasPrice(
 }
 
 /**
+ * The daily tx limit, when it is already reached by txs this writer saw committed today: the election
+ * and vote-unready logic then decide nothing at all, so without this the status would look healthy
+ * while a needed tx (e.g. ready-for-committee) is held back until the next UTC day. '' when not reached.
+ */
+export function dailyLimitReachedReason(state: State, config: Pick<EthereumTxParams, 'EthereumMaxCommittedDailyTx'>): string {
+  const committedToday = state.EthereumCommittedTxStats[getToday()] ?? 0;
+  if (committedToday < config.EthereumMaxCommittedDailyTx) return '';
+  return `daily tx limit reached: ${committedToday} txs committed today (max ${config.EthereumMaxCommittedDailyTx}), nothing is sent until the next UTC day`;
+}
+
+/**
  * Refuses a tx that could break a spending limit. Both limits hold across restarts (the counters are
  * restored from status.json) and count what the chain says, not only what this process saw:
  *  - daily: the nonce counts every tx mined from the guardian address today, including txs that were

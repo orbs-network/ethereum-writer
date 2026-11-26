@@ -6,6 +6,7 @@ import {restoreFromStatusFile, StatusReporter} from './write/status';
 import {describeError, describeErrorStack} from './redact';
 import { readManagementStatus, isGuardianRegistered } from './read/management';
 import {readAllGuardiansReputations} from './read/guardians-reputations';
+import { dailyLimitReachedReason } from './write/ethereum-helpers';
 import {calcEthereumSyncStatus} from './model/logic-ethsync';
 import {
   calcTimeEnteredTopology,
@@ -57,7 +58,9 @@ export async function runLoop(config: Configuration) {
 // runs every 2 minutes in prod, 1 second in tests
 async function runLoopTick(config: Configuration, state: State, status: StatusReporter) {
   Logger.log('Run loop waking up.');
-  state.SpendingLimitReason = ''; // set again below if a limit still stops a send
+  // set again below if a limit still stops a send; the daily limit is reported even when no tx is due,
+  // because the decision logic stops deciding at all once it is reached
+  state.SpendingLimitReason = dailyLimitReachedReason(state, config);
 
   // STEP 1: read all data (io)
 
