@@ -61,6 +61,19 @@ The spending counters (daily txs, fees, the first nonce of the day) and a transa
 | `Payload.Reader {Status, Reason}` | Whether the reader's last status could be acted on. While the reader reports `Payload.Sync.State = "syncing"` or a non-empty `Error`, the writer applies none of its data and decides no transactions. |
 | `Payload.EthereumSync {LastRpcErrorAt, LastRpcError, RpcErrorsLastHour}` | Every failed Ethereum RPC call, same fields as evm-reader: unix seconds and URL-free text of the last one (kept after later successes), and counts over the last hour as `{Timeout, RangeLimit, RateLimit, Other}` (`RangeLimit` is always 0 here). |
 
+### Vote unready timing
+
+Every run loop tick (`RunLoopPollTimeSeconds`, 2 minutes) the writer samples each committee member's reader status. A sample is bad when the peer cannot be reached or its `CurrentRefTime` is `InvalidEthereumSyncSeconds` (1 hour) or more behind. Only freshness is used: a peer's data is never applied.
+
+With the defaults, a peer is voted unready only when all of the following hold:
+
+1. At least `InvalidReputationThreshold` (50%) of its last `ReputationSampleSize` (100) samples are bad. That is about 100 minutes of bad samples.
+2. It stays bad without a break for `InvalidReputationGraceSeconds` (30 hours). Recovering restarts this.
+3. The median peer is at most `InvalidReputationCheckThreshold` (20%) bad. If many peers look bad at once, the problem is more likely ours and nobody is voted.
+4. This node is in the committee, its own reader is usable and in sync, and the daily tx limit is not reached.
+
+So a peer must look out of sync for roughly 31.5 hours before a vote. A full v5 ethereum-reader resync (about 1.3 hours) or a restart never triggers one. Peers that report `Sync.State = "syncing"` are deliberately not skipped: a reader stuck syncing is the failure vote unready exists for. `SuspendVoteUnready` (default `true`, env `SUSPEND_VOTE_UNREADY`) only logs the decision instead of sending it. These defaults are pinned by tests in `src/model/logic-voteunready.test.ts`.
+
 ## Developer instructions
 
 ### Install dev environment

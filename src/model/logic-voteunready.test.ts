@@ -2,6 +2,7 @@ import test from 'ava';
 import {State} from './state';
 import {getAllGuardiansToVoteUnready} from './logic-voteunready';
 import {exampleConfig} from '../config.example';
+import {defaultConfiguration} from '../config';
 import {getCurrentClockTime, getToday} from '../helpers';
 
 // example state reflects excellent reputations
@@ -191,4 +192,64 @@ test('is not in sync/stuck does not cause vote unready', (t) => {
     state.TimeEnteredBadReputation['e2'] = getCurrentClockTime() - 10 * 60 * 60;
     t.deepEqual(getAllGuardiansToVoteUnready(state, exampleConfig), [{EthAddress: 'e2', Weight: 10}]);
 
+});
+
+// Pins the production defaults that decide how long a peer must look out of sync before this writer
+// votes it unready, so a resyncing reader (about 1.3h for a full v5 ethereum-reader resync) never
+// triggers a vote. See "Vote unready timing" in the README for the arithmetic.
+const defaults = {
+    ...exampleConfig,
+    RunLoopPollTimeSeconds: defaultConfiguration.RunLoopPollTimeSeconds,
+    InvalidEthereumSyncSeconds: defaultConfiguration.InvalidEthereumSyncSeconds,
+    ReputationSampleSize: defaultConfiguration.ReputationSampleSize,
+    InvalidReputationThreshold: defaultConfiguration.InvalidReputationThreshold,
+    InvalidReputationCheckThreshold: defaultConfiguration.InvalidReputationCheckThreshold,
+    InvalidReputationGraceSeconds: defaultConfiguration.InvalidReputationGraceSeconds,
+};
+
+test('vote unready timing defaults are pinned', (t) => {
+    t.is(defaultConfiguration.RunLoopPollTimeSeconds, 2 * 60); // one reputation sample per tick
+    t.is(defaultConfiguration.InvalidEthereumSyncSeconds, 60 * 60); // a sample is bad when RefTime is 1h behind
+    t.is(defaultConfiguration.ReputationSampleSize, 100); // last 100 samples (200 minutes)
+    t.is(defaultConfiguration.InvalidReputationThreshold, 50); // bad when half of them are bad
+    t.is(defaultConfiguration.InvalidReputationCheckThreshold, 20); // failsafe: median above 20% votes nobody
+    t.is(defaultConfiguration.InvalidReputationGraceSeconds, 30 * 60 * 60); // then bad for 30h before a vote
+});
+
+test('with the defaults, a peer bad for less than 30 hours is not voted unready, after 30 hours it is', (t) => {
+    const state = getExampleState();
+    state.Reputations['o3'] = 100; // every sample bad
+
+    state.TimeEnteredBadReputation['e3'] = getCurrentClockTime() - 29 * 60 * 60;
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), []);
+
+    state.TimeEnteredBadReputation['e3'] = getCurrentClockTime() - (30 * 60 * 60 + 60);
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), [{EthAddress: 'e3', Weight: 10}]);
+});
+
+test('with the defaults, a peer that recovers restarts its 30 hour grace', (t) => {
+    const state = getExampleState();
+    state.Reputations['o3'] = 100;
+    state.TimeEnteredBadReputation['e3'] = getCurrentClockTime() - 29 * 60 * 60;
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), []);
+
+    state.Reputations['o3'] = 49; // below the 50% threshold: good again
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), []);
+    t.is(state.TimeEnteredBadReputation['e3'], 0);
+
+    state.Reputations['o3'] = 100; // bad again: the grace starts over
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), []);
+    t.true(getCurrentClockTime() - state.TimeEnteredBadReputation['e3'] < 5);
+});
+
+test('with the defaults, nobody is voted unready while the median peer is more than 20% bad', (t) => {
+    const state = getExampleState();
+    state.Reputations = {o1: 25, o2: 25, o3: 100, o4: 25, o5: 0}; // median 25%
+    state.TimeEnteredBadReputation['e3'] = getCurrentClockTime() - 40 * 60 * 60;
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), []);
+
+    state.Reputations = {o1: 20, o2: 20, o3: 100, o4: 20, o5: 0}; // median 20%: not above the failsafe
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), []); // re-entered bad just now
+    state.TimeEnteredBadReputation['e3'] = getCurrentClockTime() - 40 * 60 * 60;
+    t.deepEqual(getAllGuardiansToVoteUnready(state, defaults), [{EthAddress: 'e3', Weight: 10}]);
 });
