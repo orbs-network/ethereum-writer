@@ -1,7 +1,6 @@
 import Web3 from 'web3';
 import { Contract } from 'web3-eth-contract';
 import { RpcErrorLog } from '../write/rpc-errors';
-import * as Orbs from 'orbs-client-sdk';
 import { getCurrentClockTime, getCurrentVersion, getCurrentCommit } from '../helpers';
 import Signer from 'orbs-signer-client';
 
@@ -73,10 +72,6 @@ export class State {
   guardianRegistration?: Contract;
   guardianRegistrationAddress?:string;
   
-
-  // orbs clients - updated by read/vchain-reputations.ts
-  orbsAccount = Orbs.createAccount();
-  orbsClientPerVchain: { [VirtualChainId: string]: Orbs.Client } = {};
 
   chainId = 0; // verified against config.EthereumChainId every tick; 0 = not verified, nothing is signed
   ChainCheckError = ''; // why the RPC failed the chain check ('' when it passed)

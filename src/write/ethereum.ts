@@ -17,15 +17,11 @@ import * as Logger from '../logger';
 import { describeError, describeErrorStack } from '../redact';
 import { getCurrentClockTime, getToday, getTenDayPeriod } from '../helpers';
 import { State, EthereumTxStatus, CommitteeMember } from '../model/state';
-import {
-  ContractRegistryKey,  
-  getAbiByContractAddress,
-  getAbiByContractRegistryKey,
-} from '@orbs-network/orbs-ethereum-contracts-v2';
+import { electionsAbi } from '../abi';
 
 const HTTP_TIMEOUT_SEC = 20;
 
-// no network access: safe to call before the RPC is reachable (see readChainId)
+// no network access: safe to call before the RPC is reachable (see verifyChain)
 export function initWeb3Client(ethereumEndpoint: string, electionsContractAddress: string, state: State) {
   // init web3
   const provider = new Web3.providers.HttpProvider(ethereumEndpoint, {
@@ -39,7 +35,6 @@ export function initWeb3Client(ethereumEndpoint: string, electionsContractAddres
   state.web3.eth.transactionConfirmationBlocks = 1; // to stop web3 from polling pending tx
 
   // init contracts
-  const electionsAbi = getAbiForContract(electionsContractAddress, 'elections');
   state.ethereumElectionsContract = new state.web3.eth.Contract(electionsAbi, electionsContractAddress);  
 }
 
@@ -126,15 +121,6 @@ async function gasPriceOrRefuse(
     Logger.error(`Not sending ${description}: ${err.message}.`);
     return undefined;
   }
-}
-
-function getAbiForContract(address: string, contractName: ContractRegistryKey) {
-  // attempts to get the ABI by address first (useful for deprecated contracts and breaking ABI changes)
-  const abi = getAbiByContractAddress(address);
-  if (abi) return abi;
-
-  // if address is unknown, rely on the latest ABI's (useful for testing mostly)
-  return getAbiByContractRegistryKey(contractName);
 }
 
 export async function sendEthereumElectionsTransaction(

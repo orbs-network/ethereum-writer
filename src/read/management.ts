@@ -4,7 +4,7 @@ import {ReaderStatusEnum, State} from '../model/state';
 import {array, bool, Decoder, decodeValue, maybe, num, object, record, str} from 'ts-json-decode';
 import {getCurrentClockTime} from '../helpers';
 import {findEthFromOrbsAddress} from '../model/helpers';
-import {getAbiByContractRegistryKey} from '@orbs-network/orbs-ethereum-contracts-v2';
+import {guardiansRegistrationAbi} from '../abi';
 import AbortController from "abort-controller";
 import fetch from "node-fetch";
 import {describeError, truncate} from '../redact';
@@ -25,17 +25,12 @@ export function updateGuardianRegistrationContract(state: State, address:string)
   // addigment
   state.guardianRegistrationAddress = address;
 
-  const regAbi = getAbiByContractRegistryKey('guardiansRegistration');
-  if(!regAbi) {
-    Logger.error(`failed to create regApi`);
-    return;
-  }
   if(!state.web3){
     Logger.error(`web3 is not initialized`);
     return;
   }
 
-  state.guardianRegistration = new state.web3.eth.Contract(regAbi, state.guardianRegistrationAddress);
+  state.guardianRegistration = new state.web3.eth.Contract(guardiansRegistrationAbi, state.guardianRegistrationAddress);
   if(!state.guardianRegistration)
     Logger.error(`failed to create state.guardianRegistration web3 instance`);
 }
