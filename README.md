@@ -23,7 +23,7 @@ The service is packaged as a Docker image. It is routinely published from this r
 | `SignerEndpoint` | HTTP URL endpoint of an instance of [signer service](https://github.com/orbs-network/signer-service), for example `http://signer:7777`. |
 | `EthereumElectionsContract` | Ethereum address of Orbs V2 [Elections](https://github.com/orbs-network/orbs-ethereum-contracts-v2/blob/master/contracts/spec_interfaces/IElections.sol) contract, for example `0x02Ca9F2c5dD0635516241efD480091870277865b`. |
 | `NodeOrbsAddress` | The Orbs address of the node, configured during [initialization](https://github.com/orbs-network/validator-instructions) with Polygon, for example `8cd2a24f0c3f50bce2f12c846277491433b47ae0`. |
-| `ManagementServiceEndpointSchema` | Local schema of the Public API HTTP endpoint of the management service where `{GUARDIAN_IP}` is a replacable parameter of the IP address of any guardian of the network.<br>Default: 'http://{{GUARDIAN_IP}}/services/management-service/status' |
+| `ManagementServiceEndpointSchema` | Local schema of the Public API HTTP endpoint of the management service where `{{GUARDIAN_IP}}` is a replaceable parameter of the IP address of any guardian of the network.<br>Default: 'http://{{GUARDIAN_IP}}/services/management-service/status' |
 | `StatusJsonPath` | The local path on disk where status JSON should be written by the service.<br>Default: `./status/status.json` |
 | `RunLoopPollTimeSeconds` | The interval in seconds of how often the runloop of the service wakes up to execute its routine of reading data, update state and write side effects.<br>Default: `120` (2 minutes) |
 | `EthereumBalancePollTimeSeconds` | How often in seconds should Ether balance be queried, must be a a multiple of `RunLoopPollTimeSeconds`.<br>Default: `14400` (4 hours) |
@@ -73,6 +73,8 @@ With the defaults, a peer is voted unready only when all of the following hold:
 4. This node is in the committee, its own reader is usable and in sync, and the daily tx limit is not reached.
 
 So a peer must look out of sync for roughly 31.5 hours before a vote. A full v5 ethereum-reader resync (about 1.3 hours) or a restart never triggers one. Peers that report `Sync.State = "syncing"` are deliberately not skipped: a reader stuck syncing is the failure vote unready exists for. `SuspendVoteUnready` (default `true`, env `SUSPEND_VOTE_UNREADY`) only logs the decision instead of sending it. These defaults are pinned by tests in `src/model/logic-voteunready.test.ts`.
+
+Reputation reflects only a peer's Ethereum sync, never its Polygon (matic) sync, and this is intentional. Samples fetch `ManagementServiceEndpointSchema`, by default `http://<peer ip>/services/management-service/status`. On v5 nodes nginx routes that path to `ethereum-reader`; on legacy nodes it is the Ethereum management service. A peer's `matic-reader` being slow, stuck or down therefore never affects its reputation or any vote unready. This keeps the signal simple and stops a slow Polygon backend from getting committee nodes voted out. Do not add matic to reputation.
 
 ## Developer instructions
 
