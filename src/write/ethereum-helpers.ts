@@ -41,6 +41,24 @@ export function getGasPriceStrategy(previousTxStatus: EthereumTxStatus | undefin
   return 'recommended';
 }
 
+// legacy txs pay their whole gas price; under EIP-1559 a block only includes them at or above its base
+// fee, which can rise 12.5% per block. One block of headroom keeps a tx includable in the next block.
+const BASE_FEE_HEADROOM = 1.125;
+
+/** The latest block's base fee in wei, 0 on a chain without one (pre-London). */
+export async function readBaseFee(state: State): Promise<number> {
+  if (!state.web3) throw new Error('Cannot read base fee until web3 client is initialized.');
+  const block = (await state.web3.eth.getBlock('latest')) as unknown as { baseFeePerGas?: string | number } | null;
+  const baseFee = Number(block?.baseFeePerGas ?? 0);
+  return Number.isFinite(baseFee) && baseFee > 0 ? baseFee : 0;
+}
+
+/**
+ * The gas price for a new tx: the RPC's gas price, discounted for a 'discount' tx, but never below the
+ * base fee plus one block of headroom (a discounted price under the base fee cannot be included at all;
+ * today the gas price is almost all base fee). Refuses (SpendingLimitError, nothing is signed) when that
+ * price is above EthereumMaxGasPrice: a tx capped below the base fee could never be included.
+ */
 export async function calcGasPrice(
   strategy: GasPriceStrategy,
   state: State,
@@ -52,14 +70,21 @@ export async function calcGasPrice(
   if (recommendedGasPrice <= 0) {
     throw new Error(`Cannot retrieve recommended gas price.`);
   }
+  const floor = Math.ceil((await readBaseFee(state)) * BASE_FEE_HEADROOM);
 
   let res = recommendedGasPrice;
   if (strategy == 'discount') res = Math.round(config.EthereumDiscountGasPriceFactor * recommendedGasPrice);
+  res = Math.max(res, floor);
   if (res > config.EthereumMaxGasPrice) {
-    Logger.error(`Gas price ${res} surpassed maximum allowed ${config.EthereumMaxGasPrice}.`);
-    res = config.EthereumMaxGasPrice;
+    throw new SpendingLimitError(
+      `gas price ${toGwei(res)} gwei needed, above the max of ${toGwei(config.EthereumMaxGasPrice)} gwei (EthereumMaxGasPrice)`
+    );
   }
   return res;
+}
+
+function toGwei(wei: number): string {
+  return String(Math.round((wei / 1e9) * 1000) / 1000);
 }
 
 /**

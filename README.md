@@ -36,13 +36,15 @@ The service is packaged as a Docker image. It is routinely published from this r
 | `VoteUnreadyValiditySeconds` | How often vote outs should be resent against the same validator, `VOTEOUT_VALIDAITY` in the spec.<br>Default: `604800` (7 days) |
 | `ElectionsAuditOnly` | Whether the node is audit only and should avoid joining the committee as elected validator and remain standby in the topology instead.<br>Default: `false` |
 | `SuspendVoteUnready` | Should the node avoid sending actual vote-unready transactions to Ethereum and instead just log the intent.<br>Default: `true` |
-| `EthereumDiscountGasPriceFactor` | When trying to send transactions to Ethereum, the first attempt tries to reduce the recommended gas price and send under a discount.<br>Default: `0.75` |
+| `EthereumDiscountGasPriceFactor` | The first attempt to send a transaction offers this fraction of the RPC's gas price; a resend after a timeout or failure offers the full price. Both are raised to at least the latest base fee plus 12.5% (one block of base fee rise), because a legacy transaction priced below the base fee cannot be included.<br>Default: `0.75` |
 | `EthereumDiscountTxTimeoutSeconds` | On the first attempt of sending transactions to Ethereum under discount, how long to wait before considering the transaction timed out.<br>Default: `3600` (1 hour) |
 | `EthereumNonDiscountTxTimeoutSeconds` | On the following attempts of sending transactions to Ethereum without discount, how long to wait before considering the transaction timed out.<br>Default: `600` (10 minutes) |
-| `EthereumMaxGasPrice` | What is the maximum gas price that will be used for sending transactions to Ethereum (a higher recommended price is clamped to it).<br>Default: `100000000000` (100 gwei) |
+| `EthereumMaxGasPrice` | Maximum gas price in wei. When the price above needs more, nothing is signed and status shows `Spending limit reached` (a lower price could never be included).<br>Default: `100000000000` (100 gwei) |
 | `EthereumMaxCommittedDailyTx` | The maximum number of transactions mined from the guardian address in one UTC day (successful or reverted), counted from the account nonce, so txs mined after a timeout or sent by anyone else with the same key count too. This protects against bugs that may cause too many transactions to be sent and Ether balance to drain.<br>Default: `4` |
 | `EthereumMaxFeesPerTenDaysEth` | Spending budget in ETH per 10-day period. A transaction is not signed if its worst-case fee (gas limit x gas price) could take the period's fees above it.<br>Default: `0.1` |
 | `EthereumChainId` | Chain id the RPC must report. Checked every run loop tick and again right before signing; on the first match the Elections contract must also have code on the RPC. On a mismatch nothing is read from the RPC or signed, and status shows `BlockedBy ethereum-rpc` with the reason until it matches again.<br>Default: `1` (Ethereum mainnet), env `ETHEREUM_CHAIN_ID` |
+
+The gas price limit and the fee budget are in the chain's native currency and have no per-chain defaults: the defaults suit Ethereum mainnet. A writer for another chain needs its own values, e.g. on Polygon, where the base fee is often 200+ gwei, an `EthereumMaxGasPrice` around 1000 gwei and a budget in POL that covers a few transactions of about 640k gas.
 
 Every field can also be set by an environment variable with the same name in `UPPER_SNAKE_CASE` (for example `ETHEREUM_MAX_FEES_PER_TEN_DAYS_ETH`); `NodeOrbsAddress` is `NODE_ADDRESS`. On v5 nodes the config comes from environment variables only.
 

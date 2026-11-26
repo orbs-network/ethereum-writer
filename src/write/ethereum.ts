@@ -111,6 +111,23 @@ function handleSendFailure(
   return current;
 }
 
+/** The gas price for a send, or undefined when a price limit refuses it (recorded as SpendingLimitReason). */
+async function gasPriceOrRefuse(
+  strategy: ReturnType<typeof getGasPriceStrategy>,
+  description: string,
+  state: State,
+  config: EthereumTxParams
+): Promise<number | undefined> {
+  try {
+    return await calcGasPrice(strategy, state, config);
+  } catch (err) {
+    if (!(err instanceof SpendingLimitError)) throw err;
+    state.SpendingLimitReason = err.message;
+    Logger.error(`Not sending ${description}: ${err.message}.`);
+    return undefined;
+  }
+}
+
 function getAbiForContract(address: string, contractName: ContractRegistryKey) {
   // attempts to get the ABI by address first (useful for deprecated contracts and breaking ABI changes)
   const abi = getAbiByContractAddress(address);
@@ -133,7 +150,8 @@ export async function sendEthereumElectionsTransaction(
       ? state.ethereumElectionsContract.methods.readyToSync
       : state.ethereumElectionsContract.methods.readyForCommittee;
   const gasPriceStrategy = getGasPriceStrategy(state.EthereumLastElectionsTx);
-  const gasPrice = await calcGasPrice(gasPriceStrategy, state, config);
+  const gasPrice = await gasPriceOrRefuse(gasPriceStrategy, `${type} transaction`, state, config);
+  if (gasPrice === undefined) return; // refused: nothing signed, the previous tx status stays
 
   const previous = state.EthereumLastElectionsTx;
   state.EthereumLastElectionsTx = {
@@ -172,7 +190,11 @@ export async function sendEthereumVoteUnreadyTransaction(
   const ethAddressForAbi = `0x${ethAddress}`;
   const contractMethod = state.ethereumElectionsContract.methods.voteUnready;
   const gasPriceStrategy = getGasPriceStrategy(state.EthereumLastVoteUnreadyTx);
-  const gasPrice = await calcGasPrice(gasPriceStrategy, state, config);
+  // a simulated vote sends nothing, so it needs no price (and no price limit applies)
+  const gasPrice = config.SuspendVoteUnready
+    ? 0
+    : await gasPriceOrRefuse(gasPriceStrategy, `vote unready transaction against ${ethAddress}`, state, config);
+  if (gasPrice === undefined) return; // refused: nothing signed, the previous tx status stays
 
   const previous = state.EthereumLastVoteUnreadyTx;
   state.EthereumLastVoteUnreadyTx = {

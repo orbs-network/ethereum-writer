@@ -14,7 +14,7 @@ import { sleep, getCurrentClockTime, getToday, getTenDayPeriod } from '../helper
 import Signer from 'orbs-signer-client';
 import { exampleConfig } from '../config.example';
 import { TransactionReceipt } from 'web3-core';
-import { getReceiptFeeInEth, dailyLimitReachedReason } from './ethereum-helpers';
+import { getReceiptFeeInEth, dailyLimitReachedReason, readBaseFee } from './ethereum-helpers';
 import nock from 'nock';
 
 
@@ -106,7 +106,9 @@ function newState() {
   return state;
 }
 
-function getMockWeb3Client(behavior: 'success' | 'badsend' | 'pending' | 'revert' | 'removed' | 'overmax' | 'otherchain' = 'success') {
+function getMockWeb3Client(
+  behavior: 'success' | 'badsend' | 'pending' | 'revert' | 'removed' | 'overmax' | 'otherchain' | 'highbase' | 'nobase' = 'success'
+) {
   return ({
     eth: {
       getChainId: async () => {
@@ -116,6 +118,12 @@ function getMockWeb3Client(behavior: 'success' | 'badsend' | 'pending' | 'revert
       getTransactionCount: async () => {
         await sleep(0);
         return 17;
+      },
+      getBlock: async () => {
+        await sleep(0);
+        if (behavior == 'nobase') return {}; // a chain without EIP-1559
+        // web3 1.2.6 passes baseFeePerGas through unformatted (hex)
+        return { baseFeePerGas: behavior == 'highbase' ? '0x8d8f9fc00' /* 38 gwei */ : '0x2540be400' /* 10 gwei */ };
       },
       getGasPrice: async () => {
         await sleep(0);
@@ -210,21 +218,50 @@ test('sendEthereumElectionsTransaction ready-for-committee successful after time
   t.is(state.EthereumCommittedTxStats[getToday()], undefined);
 });
 
-test('sendEthereumElectionsTransaction with a huge gas price is clamped to the max when the budget allows', async (t) => {
+test('sendEthereumElectionsTransaction above the max gas price is refused, not sent underpriced', async (t) => {
   const state = newState();
-  state.EthereumLastElectionsTx = getExampleEthereumTxStatus([]);
-  state.EthereumLastElectionsTx.Status = 'timeout';
+  const previous = getExampleEthereumTxStatus([]);
+  previous.Status = 'timeout';
+  state.EthereumLastElectionsTx = previous;
+  state.web3 = getMockWeb3Client('overmax'); // 999 gwei recommended, max 150 gwei
+  let signed = false;
+  state.signer = ({ sign: async () => { await sleep(0); signed = true; return {}; } } as unknown) as Signer;
+  state.ethereumElectionsContract = getMockElectionsContract();
+  await sendEthereumElectionsTransaction('ready-for-committee', 'sender', state, { ...exampleConfig, EthereumMaxFeesPerTenDaysEth: 10 });
+
+  t.false(signed);
+  t.is(state.EthereumLastElectionsTx, previous); // nothing was sent: no failed-send, no new status
+  t.is(state.SpendingLimitReason, 'gas price 999 gwei needed, above the max of 150 gwei (EthereumMaxGasPrice)');
+});
+
+test('a discount price is never below the base fee plus one block of headroom', async (t) => {
+  const state = newState();
+  state.web3 = getMockWeb3Client('highbase'); // 40 gwei recommended, base fee 38 gwei: 0.75 x 40 = 30 < 38
+  state.signer = getMockSigner();
+  state.ethereumElectionsContract = getMockElectionsContract();
+  await sendEthereumElectionsTransaction('ready-to-sync', 'sender', state, exampleConfig);
+
+  t.is(state.EthereumLastElectionsTx?.GasPriceStrategy, 'discount');
+  t.is(state.EthereumLastElectionsTx?.GasPrice, 42750000000); // 38 x 1.125 gwei
+  t.is(state.EthereumLastElectionsTx?.Status, 'pending');
+});
+
+test('a chain without a base fee keeps the plain discount price', async (t) => {
+  const state = newState();
+  state.web3 = getMockWeb3Client('nobase');
+  state.signer = getMockSigner();
+  state.ethereumElectionsContract = getMockElectionsContract();
+  await sendEthereumElectionsTransaction('ready-to-sync', 'sender', state, exampleConfig);
+  t.is(state.EthereumLastElectionsTx?.GasPrice, 30000000000); // 0.75 x 40 gwei
+});
+
+test('a simulated vote unready needs no gas price, so the max gas price does not stop it', async (t) => {
+  const state = newState();
   state.web3 = getMockWeb3Client('overmax');
   state.signer = getMockSigner();
   state.ethereumElectionsContract = getMockElectionsContract();
-  const config = { ...exampleConfig, EthereumMaxFeesPerTenDaysEth: 1 };
-  await sendEthereumElectionsTransaction('ready-for-committee', 'sender', state, config);
-
-  if (!state.EthereumLastElectionsTx) throw new Error(`EthereumLastElectionsTx not defined`);
-  t.is(state.EthereumLastElectionsTx.GasPriceStrategy, 'recommended');
-  t.is(state.EthereumLastElectionsTx.GasPrice, exampleConfig.EthereumMaxGasPrice);
-  t.is(state.EthereumLastElectionsTx.Status, 'pending');
-  t.is(state.EthereumLastElectionsTx.TxHash, '0xtxHash');
+  await sendEthereumVoteUnreadyTransaction([{ EthAddress: 'abc', Weight: 1 }], 'sender', state, { ...exampleConfig, SuspendVoteUnready: true });
+  t.is(state.EthereumLastVoteUnreadyTx?.TxHash, 'not-actually-sent');
   t.is(state.SpendingLimitReason, '');
 });
 
@@ -233,11 +270,11 @@ test('sendEthereumElectionsTransaction is refused when its worst-case fee could 
   const previous = getExampleEthereumTxStatus([]);
   previous.Status = 'timeout';
   state.EthereumLastElectionsTx = previous;
-  state.web3 = getMockWeb3Client('overmax'); // clamped to 150 gwei x (500k + 300k gas) = 0.12 ETH > 0.1 budget
+  state.web3 = getMockWeb3Client('highbase'); // 42.75 gwei x (500k + 300k gas) = 0.0342 ETH > 0.03 budget
   let signed = false;
   state.signer = ({ sign: async () => { await sleep(0); signed = true; return {}; } } as unknown) as Signer;
   state.ethereumElectionsContract = getMockElectionsContract();
-  await sendEthereumElectionsTransaction('ready-for-committee', 'sender', state, exampleConfig);
+  await sendEthereumElectionsTransaction('ready-for-committee', 'sender', state, { ...exampleConfig, EthereumMaxFeesPerTenDaysEth: 0.03 });
 
   t.false(signed);
   t.is(state.EthereumLastElectionsTx, previous); // nothing was sent: no failed-send, no new status
@@ -667,4 +704,24 @@ test('a reached daily limit is reported even when no tx is due', (t) => {
   );
   state.EthereumCommittedTxStats = { '2000-01-01': 9 }; // other days do not count
   t.is(dailyLimitReachedReason(state, exampleConfig), '');
+});
+
+test('readBaseFee reads baseFeePerGas through the real web3 1.2.6 block formatter', async (t) => {
+  const block = (extra: object) => (_uri: string, body: { id: number }) => ({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        number: '0x10', hash: '0x' + '1'.repeat(64), parentHash: '0x' + '2'.repeat(64), nonce: '0x0000000000000000',
+        sha3Uncles: '0x' + '3'.repeat(64), logsBloom: '0x' + '0'.repeat(512), transactionsRoot: '0x' + '4'.repeat(64),
+        stateRoot: '0x' + '5'.repeat(64), receiptsRoot: '0x' + '6'.repeat(64), miner: '0x' + '7'.repeat(40),
+        difficulty: '0x0', totalDifficulty: '0x0', extraData: '0x', size: '0x1', gasLimit: '0x1c9c380',
+        gasUsed: '0x0', timestamp: '0x6000000', transactions: [], uncles: [], ...extra,
+      },
+    });
+  const state = new State();
+  initWeb3Client('http://basefee-rpc:8545/', '0xf8B352100dE45D2668768290504DC89e85766E02', state);
+  nock(/basefee-rpc/).post(/.*/, /eth_getBlockByNumber/).reply(200, block({ baseFeePerGas: '0x2540be400' }));
+  t.is(await readBaseFee(state), 10000000000);
+  nock(/basefee-rpc/).post(/.*/, /eth_getBlockByNumber/).reply(200, block({}));
+  t.is(await readBaseFee(state), 0);
 });
